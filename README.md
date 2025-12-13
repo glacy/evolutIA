@@ -14,7 +14,6 @@ Sistema automatizado para generar preguntas de examen desafiantes basadas en mat
 ## Requisitos
 
 - Python 3.8 o superior
-- Python 3.8 o superior
 - API key de OpenAI o Anthropic (Claude)
 - Opcional: Servidor LLM local (Ollama, LM Studio) para generación offline
 
