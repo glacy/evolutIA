@@ -204,3 +204,121 @@ GENERA LA SOLUCIÓN COMPLETA:"""
         
         return variation
 
+    def generate_new_exercise_from_topic(self, topic: str, tags: list = None, difficulty: str = "alta") -> Optional[Dict]:
+        """
+        Genera un ejercicio nuevo desde cero basado en un tema y tags.
+        
+        Args:
+            topic: Tema principal (ej: "analisis_vectorial")
+            tags: Lista de tags específicos (ej: ["stokes", "teorema"])
+            difficulty: Nivel de dificultad (media, alta, muy_alta)
+            
+        Returns:
+            Diccionario con el nuevo ejercicio y su solución
+        """
+        if not self.retriever:
+            logger.warning("RAG no disponible para generación desde cero")
+            return None
+            
+        tags = tags or []
+        context = {}
+        
+        # Normalizar topic para manejar lista o string
+        if isinstance(topic, list):
+            topic_list = topic
+            topic_str = ", ".join(topic)
+        else:
+            topic_list = [topic]
+            topic_str = topic
+        
+        # 1. Recuperar contexto teórico
+        reading_context = self.retriever.retrieve_reading_context(topic_str, top_k=3)
+        context['reading_context'] = reading_context
+        
+        # 2. Recuperar ejercicios relacionados para estilo
+        search_terms = tags + topic_list
+        related_exercises = self.retriever.retrieve_related_concepts(search_terms, top_k=3)
+        context['related_exercises'] = related_exercises
+        
+        # 3. Construir prompt
+        prompt = self._create_new_exercise_prompt(topic, tags, context, difficulty)
+        
+        # 4. Generar
+        if self.api_provider == "openai":
+            content = self._call_openai_api(prompt, model=self.model_name or "gpt-4")
+        elif self.api_provider == "anthropic":
+            content = self._call_anthropic_api(prompt, model=self.model_name or "claude-3-opus-20240229")
+        elif self.api_provider == "local":
+            content = self._call_local_api(prompt)
+        else:
+            return None
+            
+        if not content:
+            return None
+            
+        # 5. Estructurar resultado
+        # El modelo debe devolver ejercicio y solución separados. 
+        # Asumiremos un formato estándar o usaremos parsing simple.
+        
+        parts = content.split("SOLUCIÓN REQUERIDA:")
+        exercise_text = content
+        solution_text = ""
+        
+        if len(parts) > 1:
+            exercise_text = parts[0].replace("EJERCICIO NUEVO:", "").strip()
+            solution_text = parts[1].strip()
+        else:
+            # Fallback si el modelo no usó el separador exacto
+            exercise_text = content.replace("EJERCICIO NUEVO:", "").strip()
+        
+        return {
+            'variation_content': exercise_text,
+            'variation_solution': solution_text,
+            'original_frontmatter': {
+                'subject': topic,
+                'tags': tags,
+                'complexity': difficulty
+            }
+        }
+
+    def _create_new_exercise_prompt(self, topic: str, tags: list, context: Dict, difficulty: str) -> str:
+        """Crea el prompt para generar un ejercicio nuevo."""
+        
+        context_str = self.context_enricher.format_context_dict(context)
+        tags_str = ", ".join(tags)
+        
+        # Mapeo de dificultad a instrucciones
+        diff_instructions = {
+            "media": "El nivel debe ser 'Intermedio'. Enfócate en la aplicación directa de conceptos.",
+            "alta": "El nivel debe ser 'Avanzado'. Requiere combinar conceptos o realizar demostraciones no triviales.",
+            "muy_alta": "El nivel debe ser 'Desafío / Experto'. Requiere demostraciones abstractas, casos límite o síntesis creativa de múltiples temas."
+        }
+        
+        difficulty_instruction = diff_instructions.get(difficulty, diff_instructions["alta"])
+        
+        return f"""Eres un profesor experto en Métodos Matemáticos para Física e Ingeniería.
+Tu tarea es CREAR UN NUEVO EJERCICIO DE EXAMEN desde cero.
+No debes copiar los ejemplos, sino usar su estilo y nivel de dificultad como inspiración.
+
+TEMA PRINCIPAL: {topic}
+CONCEPTOS CLAVE (TAGS): {tags_str}
+DIFICULTAD OBJETIVO: {difficulty}
+
+CONTEXTO DEL CURSO (Material de referencia):
+{context_str}
+
+INSTRUCCIONES:
+1. Crea un ejercicio original que evalúe los conceptos indicados.
+2. {difficulty_instruction}
+3. Usa notación matemática LaTeX estándar.
+4. Incluye bloques :::{{math}} para ecuaciones importantes.
+5. El ejercicio debe tener una narrativa coherente (física o abstracta).
+
+FORMATO DE SALIDA REQUERIDO:
+EJERCICIO NUEVO:
+[Texto del enunciado del ejercicio aquí]
+
+SOLUCIÓN REQUERIDA:
+[Solución detallada paso a paso aquí]
+"""
+

@@ -252,3 +252,34 @@ class ContextEnricher:
         
         return formatted
 
+    def format_context_dict(self, context: Dict) -> str:
+        """
+        Formatea un diccionario de contexto completo en una cadena.
+        
+        Args:
+            context: Diccionario con claves como 'reading_context', 'related_exercises', etc.
+            
+        Returns:
+            Texto formateado concatenando todas las secciones disponibles.
+        """
+        parts = []
+        
+        # 1. Contexto de lecturas
+        readings = context.get('reading_context', [])
+        if readings:
+            reading_text = "MATERIAL DE LECTURA Y TEORÍA:\n\n"
+            for reading in readings[:3]:
+                content = reading.get('content', '')
+                reading_text += f"- {content[:500]}...\n\n"
+            parts.append(reading_text)
+            
+        # 2. Ejercicios relacionados
+        related = context.get('related_exercises', [])
+        if related:
+            # Reutilizamos la visualización de ejercicios similares
+            exercises_text = self.enrich_with_similar_exercises(related, max_examples=3)
+            if exercises_text:
+                parts.append(exercises_text)
+                
+        return "\n\n".join(parts)
+

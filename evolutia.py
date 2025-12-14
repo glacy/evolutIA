@@ -6,6 +6,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from tqdm import tqdm
 
 # Agregar el directorio actual al path para imports
 script_dir = Path(__file__).parent
@@ -136,6 +137,21 @@ Ejemplos:
         type=str,
         nargs='+',
         help='Palabras clave para el examen'
+    )
+
+    parser.add_argument(
+        '--mode',
+        type=str,
+        choices=['variation', 'creation'],
+        default='variation',
+        help='Modo de operación: variacion (default) o creacion (desde cero)'
+    )
+
+    parser.add_argument(
+        '--tags',
+        type=str,
+        nargs='+',
+        help='Tags específicos para generación en modo creacion'
     )
     
     parser.add_argument(
@@ -279,6 +295,8 @@ Ejemplos:
                 logger.warning(f"No se pudo cargar config: {e}")
 
         # Inicializar generador
+        # Inicializar generador
+        generator = None
         if args.use_rag and rag_manager:
             retriever = rag_manager.get_retriever()
             generator = EnhancedVariationGenerator(
@@ -299,45 +317,89 @@ Ejemplos:
             if 'model' in api_config:
                 generator.model_name = api_config['model']
                 logger.info(f"Usando modelo configurado: {generator.model_name}")
-        
+
         valid_variations = []
-        attempts = 0
-        max_attempts = args.num_ejercicios * 3  # Intentar hasta 3 veces por ejercicio
         
-        for exercise, analysis in selected_exercises:
-            if len(valid_variations) >= args.num_ejercicios:
-                break
+        # MODO CREACIÓN: Generar desde cero
+        if args.mode == 'creation':
+            logger.info(f"MODO CREACIÓN: Generando {args.num_ejercicios} ejercicios nuevos para: {args.tema}")
             
-            attempts += 1
-            if attempts > max_attempts:
-                logger.warning("Se alcanzó el máximo de intentos")
-                break
+            if not isinstance(generator, EnhancedVariationGenerator):
+                logger.error("El modo creación REQUIERE usar RAG (--use_rag).")
+                return 1
+                
+            for i in tqdm(range(args.num_ejercicios), desc="Creando ejercicios"):
+                # Estrategia Round-Robin para temas y tags
+                # Si se dan múltiples, se rotan para distribuir la generación
+                
+                # Seleccionar tema actual
+                current_topic = args.tema[i % len(args.tema)]
+                
+                # Seleccionar tags actuales
+                if args.tags:
+                    # Si hay tags explícitos, usamos uno por vez rotando
+                    current_tags = [args.tags[i % len(args.tags)]]
+                else:
+                    # Si no hay tags, usamos el tema como tag
+                    current_tags = [current_topic]
+                
+                # Intentar variar un poco los tags si es posible para tener diversidad
+                # Por ahora usamos los mismos
+                
+                variation = generator.generate_new_exercise_from_topic(current_topic, current_tags, difficulty=args.complejidad)
+                
+                if variation:
+                    valid_variations.append(variation)
+                else:
+                    logger.warning(f"Fallo al crear ejercicio {i+1}")
+                    
+        # MODO VARIACIÓN: Usar ejercicios existentes (Flujo original)
+        else:
+            valid_variations = []
+            attempts = 0
+            max_attempts = args.num_ejercicios * 3  # Intentar hasta 3 veces por ejercicio
             
-            logger.info(f"Generando variación {len(valid_variations) + 1}/{args.num_ejercicios}...")
+            # Usar selected_exercises que viene de pasos anteriores
+            # ... (código original de selección y bucle while)
             
-            # Generar variación (con solución por defecto, a menos que se especifique --no_generar_soluciones)
-            if args.no_generar_soluciones:
-                variation = generator.generate_variation(exercise, analysis)
-            else:
-                variation = generator.generate_variation_with_solution(exercise, analysis)
-            
-            if not variation:
-                logger.warning("No se pudo generar variación")
-                continue
-            
-            # Validar variación
-            validation = validator.validate(exercise, analysis, variation)
-            
-            if validation['is_valid']:
-                logger.info(f"Variación válida: {len(validation['improvements'])} mejoras")
-                for improvement in validation['improvements']:
-                    logger.info(f"  - {improvement}")
-                valid_variations.append(variation)
-            else:
-                logger.warning("Variación no válida, intentando otra...")
-                if validation.get('warnings'):
-                    for warning in validation['warnings']:
-                        logger.warning(f"  - {warning}")
+            import random
+            while len(valid_variations) < args.num_ejercicios and attempts < max_attempts:
+                # Seleccionar ejercicio base
+                # Preferir los de mayor complejidad, pero con algo de aleatoriedad
+                ejercicio_base, analysis = random.choice(selected_exercises[:max(5, len(selected_exercises)//2)])
+                
+                try:
+                    # Generar variación
+                    variation = generator.generate_variation(ejercicio_base, analysis)
+                    
+                    if variation:
+                        # Validar si es realmente más compleja (o consistente en caso de RAG)
+                        is_valid = False
+                        if args.use_rag:
+                             # En RAG validamos consistencia y estilo
+                             validation = validator.validate(variation, ejercicio_base)
+                             is_valid = validation['is_consistent']
+                        else:
+                            # Validación clásica de complejidad
+                            var_analysis = analyzer.analyze({
+                                'content': variation['variation_content'], 
+                                'solution': variation['variation_solution']
+                            })
+                            validation = validator.validate(var_analysis, analysis)
+                            is_valid = validation['is_more_complex']
+                        
+                        if is_valid:
+                            valid_variations.append(variation)
+                            logger.info(f"Variación generada exitosamente ({len(valid_variations)}/{args.num_ejercicios})")
+                        else:
+                            logger.info("Variación rechazada por validación")
+                except Exception as e:
+                    logger.error(f"Error generando variación: {e}")
+                
+                attempts += 1
+        
+
+
         
         if len(valid_variations) < args.num_ejercicios:
             logger.warning(
