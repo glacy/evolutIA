@@ -267,7 +267,8 @@ GENERA SOLO EL ENUNCIADO DEL EJERCICIO VARIADO (sin solución). El ejercicio deb
             'original_label': exercise.get('label'),
             'original_content': exercise.get('content'),
             'variation_content': variation_content,
-            'original_analysis': analysis
+            'original_analysis': analysis,
+            'original_frontmatter': exercise.get('frontmatter', {})
         }
     
     def generate_variation_with_solution(self, exercise: Dict, analysis: Dict) -> Optional[Dict]:

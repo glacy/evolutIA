@@ -131,6 +131,10 @@ class RAGManager:
         if clear_existing:
             logger.info("Limpiando colección existente...")
             self.indexer.clear_collection()
+            # Actualizar la colección en el retriever si existe, ya que ha sido recreada
+            if self.retriever and self.indexer.collection:
+                self.retriever.collection = self.indexer.collection
+                logger.info("Referencia de colección actualizada en retriever")
         
         logger.info(f"Indexando {len(materials)} materiales...")
         stats = self.indexer.index_materials(materials, analyzer)
