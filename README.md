@@ -52,7 +52,7 @@ pip install -r requirements.txt
 
 ## Uso
 
-### Uso Básico
+### Uso básico
 
 ```bash
 python evolutia.py \
@@ -61,7 +61,7 @@ python evolutia.py \
   --output examenes/examen3
 ```
 
-### Opciones Disponibles
+### Opciones disponibles
 
 - `--tema`: Tema del examen (requerido)
   - Ejemplos: `analisis_vectorial`, `matrices`, `edps`, `espacios_vectoriales`, `numeros_complejos`
@@ -137,7 +137,7 @@ python evolutia.py \
   --output examenes/examen3
 ```
 
-## Uso de LLM Local (Offline)
+## Uso de LLM local (offline)
 
 EvolutIA soporta la generación de exámenes usando modelos locales como Llama 3, Mistral, o Qwen, ejecutándose en tu propia máquina a través de herramientas como [Ollama](https://ollama.com/) o [LM Studio](https://lmstudio.ai/).
 
@@ -155,7 +155,7 @@ python evolutia.py \
   --output examenes/examen_local
 ```
 
-3. **Configuración Avanzada (Opcional):**
+3. **Configuración avanzada (opcional):**
 Si tu servidor no usa el puerto por defecto o quieres cambiar el modelo, edita `evolutia/config/config.yaml`:
 ```yaml
 local:
@@ -273,7 +273,7 @@ tags:
 original_subject: Matrices - Semana 12
 ```
 
-## Estructura de Archivos Generados
+## Estructura de archivos generados
 
 El script genera la siguiente estructura:
 
@@ -290,7 +290,7 @@ examenes/examen3/
 └── solucion_ex4_e3.md     # Solución ejercicio 4
 ```
 
-## Cómo Funciona
+## ¿Cómo funciona?
 
 1. **Extracción**: El sistema busca y lee materiales didácticos del tema especificado
    - Busca en directorios del tema (ej: `analisis_vectorial/`)
@@ -328,7 +328,7 @@ Puedes personalizar el comportamiento editando `config/config.yaml`:
 - **Complejidad**: Ajustar umbrales de validación
 - **Exámenes**: Configurar valores por defecto
 
-## Estrategias de Aumento de Complejidad
+## Estrategias de aumento de complejidad
 
 El sistema aplica las siguientes estrategias para aumentar la complejidad:
 
@@ -374,7 +374,7 @@ El sistema aplica las siguientes estrategias para aumentar la complejidad:
 - La calidad depende de la calidad de los materiales originales
 - Las variaciones requieren revisión manual antes de usar
 
-## Mejores Prácticas
+## Mejores prácticas
 
 1. **Revisar siempre**: Las variaciones generadas deben revisarse manualmente
 2. **Ajustar según necesidad**: Modifica los ejercicios generados según tu criterio
@@ -382,7 +382,7 @@ El sistema aplica las siguientes estrategias para aumentar la complejidad:
 4. **Mantener materiales actualizados**: Asegúrate de que los materiales fuente están completos
 5. **Documentar cambios**: Si modificas ejercicios, documenta los cambios realizados
 
-## Configuración Automática
+## Configuración automática
 
 El proyecto incluye una herramienta para sincronizar automáticamente el archivo de configuración con la estructura de carpetas y los metadatos de los archivos de lectura.
 
@@ -401,7 +401,7 @@ python evolutia/config_manager.py
 
 Ejecuta este script cada vez que agregues nuevos temas o modifiques las palabras clave en los materiales de lectura.
 
-## Estructura del Repositorio (Contexto)
+## Estructura del repositorio (Contexto)
 
 El generador está diseñado para funcionar dentro de la estructura estándar del curso. A continuación se muestra el esquema de directorios esperado:
 
@@ -418,7 +418,7 @@ El generador está diseñado para funcionar dentro de la estructura estándar de
 └── programa-curso.md         # Información general del curso
 ```
 
-### Estructura Interna de cada Tema
+### Estructura interna de cada tema
 
 Cada carpeta de tema (ej: `tema1/`) debe seguir una estructura similar para que el extractor encuentre los materiales:
 
