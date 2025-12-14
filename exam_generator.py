@@ -239,6 +239,8 @@ class ExamGenerator:
                     current_metadata['tags'] = original_frontmatter['tags']
                 if 'subject' in original_frontmatter:
                     current_metadata['original_subject'] = original_frontmatter['subject']
+                if 'complexity' in original_frontmatter:
+                    current_metadata['complexity'] = original_frontmatter['complexity']
 
                 # Archivo de ejercicio
                 exercise_content = variation.get('variation_content', '')

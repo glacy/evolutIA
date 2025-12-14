@@ -71,9 +71,9 @@ Ejemplos:
     parser.add_argument(
         '--tema',
         type=str,
-        required=True,
+        required=False,
         nargs='+',
-        help='Temas del examen (ej: analisis_vectorial matrices edps)'
+        help='Temas del examen (ej: analisis_vectorial matrices edps) [Requerido excepto para --reindex]'
     )
     
     parser.add_argument(
@@ -86,8 +86,8 @@ Ejemplos:
     parser.add_argument(
         '--output',
         type=str,
-        required=True,
-        help='Directorio de salida para los archivos del examen'
+        required=False,
+        help='Directorio de salida para los archivos del examen [Requerido excepto para --reindex]'
     )
     
     parser.add_argument(
@@ -168,27 +168,38 @@ Ejemplos:
     
     args = parser.parse_args()
     
+    # Validar argumentos requeridos dependiendo del modo
+    if not args.reindex:
+        if not args.tema:
+            parser.error("el argumento --tema es requerido (a menos que se use --reindex)")
+        if not args.output:
+            parser.error("el argumento --output es requerido (a menos que se use --reindex)")
+    
     # Validar argumentos
     base_path = Path(args.base_path).resolve()
     if not base_path.exists():
         logger.error(f"Ruta base no existe: {base_path}")
         return 1
     
-    output_dir = Path(args.output).resolve()
+    output_dir = None
+    exam_number = 1
     
-    # Determinar número de examen
-    if args.examen_num:
-        exam_number = args.examen_num
-    else:
-        # Intentar inferir del nombre del directorio
-        dir_name = output_dir.name
-        if 'examen' in dir_name.lower():
-            try:
-                exam_number = int(''.join(filter(str.isdigit, dir_name)))
-            except ValueError:
-                exam_number = 1
+    if args.output:
+        output_dir = Path(args.output).resolve()
+        
+        # Determinar número de examen
+        if args.examen_num:
+            exam_number = args.examen_num
         else:
-            exam_number = 1
+            # Intentar inferir del nombre del directorio
+            dir_name = output_dir.name
+            if 'examen' in dir_name.lower():
+                try:
+                    exam_number = int(''.join(filter(str.isdigit, dir_name)))
+                except ValueError:
+                    exam_number = 1
+            else:
+                exam_number = 1
     
     logger.info(f"Iniciando generación de examen {exam_number}")
     logger.info(f"Tema: {args.tema}")
@@ -209,6 +220,12 @@ Ejemplos:
             rag_manager = RAGManager(config_path=config_path, base_path=base_path)
             rag_manager.initialize(force_reindex=args.reindex)
             logger.info("Sistema RAG inicializado")
+            
+            # Si solo se solicitó reindexar (y no hay tema/output), terminar aquí
+            if args.reindex and not (args.tema and args.output):
+                logger.info("Reindexado completado exitosamente.")
+                return 0
+                
         except Exception as e:
             logger.error(f"Error inicializando RAG: {e}")
             if args.use_rag:

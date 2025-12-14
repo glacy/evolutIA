@@ -95,7 +95,8 @@ class MaterialExtractor:
                 'file_path': file_path,
                 'frontmatter': frontmatter,
                 'exercises': exercises,
-                'solutions': solutions
+                'solutions': solutions,
+                'content_body': content_body  # Exponer contenido para indexación de lecturas
             }
         except Exception as e:
             logger.error(f"Error extrayendo de {file_path}: {e}")

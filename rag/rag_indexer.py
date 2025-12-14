@@ -365,8 +365,21 @@ class RAGIndexer:
                 stats['chunks'] += len(chunk_ids)
             
             # Indexar lecturas (si hay contenido de lectura)
-            # Por ahora, no indexamos lecturas completas automáticamente
-            # Se pueden agregar después si es necesario
+            content_body = material.get('content_body', '')
+            filename = str(material.get('file_path', ''))
+            
+            # Heurística simple: Indexar como lectura si tiene "lectura" en el nombre 
+            # y tiene contenido sustancial (> 200 chars)
+            if 'lectura' in filename.lower() and len(content_body) > 200:
+                metadata = {
+                    'title': material.get('frontmatter', {}).get('title', ''),
+                    'subject': material.get('frontmatter', {}).get('subject', ''),
+                    'tags': ','.join(material.get('frontmatter', {}).get('tags', [])),
+                    'source_file': filename
+                }
+                chunk_ids = self.index_reading(content_body, metadata)
+                stats['readings'] += 1
+                stats['chunks'] += len(chunk_ids)
         
         logger.info(f"Indexación completada: {stats}")
         return stats
