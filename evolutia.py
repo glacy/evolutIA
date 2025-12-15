@@ -411,8 +411,9 @@ Ejemplos:
                         is_valid = False
                         if args.use_rag:
                              # En RAG validamos consistencia y estilo
-                             validation = validator.validate(variation, ejercicio_base)
-                             is_valid = validation['is_consistent']
+                             # validate(self, original_exercise, original_analysis, variation)
+                             validation = validator.validate(ejercicio_base, analysis, variation)
+                             is_valid = validation['is_valid'] # Use is_valid which combines consistency and complexity
                         else:
                             # Validar complejidad
                             # var_analysis ya se calcula dentro de validate? No, validate llama a analyze internamente

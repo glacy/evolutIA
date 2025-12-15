@@ -189,8 +189,16 @@ class EnhancedVariationGenerator(VariationGenerator):
         if exercise_type == 'multiple_choice':
             try:
                 import json
+                import re
                 clean_content = content.replace('```json', '').replace('```', '').strip()
-                data = json.loads(clean_content, strict=False)
+                
+                # Fix common latex backslash issues in json string
+                try:
+                     data = json.loads(clean_content, strict=False)
+                except json.JSONDecodeError:
+                    # Fallback: simple escape for common latex backslashes
+                    clean_content_fixed = clean_content.replace('\\', '\\\\').replace('\\\\"', '\\"')
+                    data = json.loads(clean_content_fixed, strict=False)
                 
                 variation_content = f"{data['question']}\n\n"
                 for opt, text in data['options'].items():

@@ -140,6 +140,7 @@ REQUISITOS:
    - EVITA preguntas que requieran cálculos largos o procedimentales.
    - PREFIERE preguntas sobre implicaciones teóricas, relaciones entre conceptos, o interpretaciones físicas.
    - ESTILO: Directo, conciso, tipo "completar la frase" o "seleccionar la afirmación verdadera".
+   - RESTRICCIÓN IMPORTANTE: NO generes preguntas de tipo Falso/Verdadero o Sí/No. Deben ser 4 opciones conceptuales distintas.
 
 EJEMPLO DE ESTILO DESEADO:
 "El producto escalar de vectores perpendiculares es __________."
