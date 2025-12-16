@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Directorios a excluir de la búsqueda de temas
 EXCLUDED_DIRS = {
     'evolutia', 
-    #'examenes', |
+    #'examenes', 
     #'tareas', 
     'proyecto', 
     '_build', 

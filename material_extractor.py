@@ -173,8 +173,30 @@ class MaterialExtractor:
                     tarea_file = tarea_dir / f"{tarea_dir.name}.md"
                     if tarea_file.exists():
                         material = self.extract_from_file(tarea_file)
+                        # Filtrar por tema si es relevante (checking subject or tags)
+                        subject_match = material['frontmatter'].get('subject', '').lower().find(topic.lower()) != -1
+                        tags_match = any(topic.lower() in tag.lower() for tag in material['frontmatter'].get('tags', []))
+                        if subject_match or tags_match:
+                            materials.append(material)
+
+        # Buscar en examenes (pueden ser de múltiples temas) 
+        examenes_dir = self.base_path / "examenes"
+        if examenes_dir.exists():
+            for examen_dir in examenes_dir.iterdir():
+                if examen_dir.is_dir():
+                    examen_file = examen_dir / f"{examen_dir.name}.md"
+                    if examen_file.exists():
+                        material = self.extract_from_file(examen_file)
                         # Filtrar por tema si es relevante
-                        if material['frontmatter'].get('subject', '').lower().find(topic.lower()) != -1:
+                        subject_match = material['frontmatter'].get('subject', '').lower().find(topic.lower()) != -1
+                        tags_match = any(topic.lower() in tag.lower() for tag in material['frontmatter'].get('tags', []))
+                        
+                        # Si es examen, a veces no tiene subject especifico o tiene "Examen X".
+                        # Si no hay match explícito, tal vez incluirlo si no se encontraron otros materiales?
+                        # Para seguridad, requerimos algún match en subject, tags o keywords
+                        keywords_match = any(topic.lower() in kw.lower() for kw in material['frontmatter'].get('keywords', []))
+                        
+                        if subject_match or tags_match or keywords_match:
                             materials.append(material)
         
         return materials

@@ -65,12 +65,29 @@ python evolutia.py \
   --output examenes/examen3
 ```
 
+### Variación de ejercicios específicos
+
+```bash
+python evolutia.py \
+  --tema analisis_vectorial \
+  --label ex1-s1 ex2-s1 \
+  --output variacion_especifica
+```
+
+### Listar ejercicios disponibles
+
+```bash
+python evolutia.py --tema analisis_vectorial --list
+```
+
+Si no se indica un tema, el sistema buscará en todos los archivos disponibles.
+
 ### Opciones disponibles
 
 - `--tema`: Tema del examen (requerido)
   - Ejemplos: `analisis_vectorial`, `matrices`, `edps`, `espacios_vectoriales`, `numeros_complejos`
   
-- `--num_ejercicios`: Número de ejercicios a generar (default: 4)
+- `--num_ejercicios`: Número de ejercicios a generar (default: 1)
 
 - `--output`: Directorio de salida (requerido)
   - Se creará automáticamente si no existe
@@ -80,6 +97,9 @@ python evolutia.py \
 
 - `--api`: Proveedor de API de IA
   - Opciones: `openai` (default), `anthropic`, `local`, `gemini`
+
+- `--label`: ID(s) específico(s) del ejercicio a variar (ej: `ex1-s1` o múltiples: `ex1-s1 ex2-s1`).
+  - Si se usa, ignora `--num_ejercicios` y genera variaciones **solo** para los ejercicios indicados.
 
 - `--base_path`: Ruta base del proyecto (default: directorio actual)
 
@@ -94,6 +114,8 @@ python evolutia.py \
 - `--use_rag`: Usa RAG para enriquecer generación con contexto del curso (requiere indexación inicial)
 
 - `--reindex`: Fuerza re-indexación de materiales (solo con `--use_rag`)
+
+- `--list`: Lista todos los ejercicios encontrados en los temas seleccionados y muestra sus etiquetas, archivo origen y preview.
 
 ### Ejemplos
 
@@ -283,34 +305,72 @@ rag:
 - Prefieres simplicidad y rapidez
 - El costo es una preocupación
 
-## Gestión de metadatos
+## Gestión de metadatos y descubrimiento
 
-El sistema implementa una propagación inteligente de metadatos para asegurar la trazabilidad y organización de los ejercicios generados.
+### Organización y visibilidad de ejercicios
 
-### Sistema de Tags
-EvolutIA lee y preserva los tags de los archivos fuente (`*practica*.md`). Se utiliza una taxonomía multidimensional:
-- **Conceptos**: `autovalores`, `teorema-divergencia`, `producto-cruz`
-- **Tipo de competencia**: `conceptual`, `procedimental`, `aplicacion`, `demostracion`
-- **Nivel**: `basico`, `intermedio`, `desafio`
+Para que `evolutia` encuentre ejercicios ubicados en carpetas generales como `examenes/` o `tareas/` cuando filtras por un tema (ej: `--tema analisis_vectorial`), es fundamental que los archivos fuente incluyan los metadatos correctos.
 
-### Flujo de propagación
-1. **Entrada**: El sistema lee el frontmatter del archivo original (ej: `matrices/semana11_practica.md`).
-2. **Generación**: Durante la creación de la variación, se preservan estos metadatos junto con los nuevos datos generados por la IA.
-3. **Salida**:
-   - **Archivos individuales**: Cada ejercicio (`ex1_e3.md`) incluye sus tags específicos y el subject original.
-   - **Archivo de examen**: El archivo principal (`examen3.md`) agrega automáticamente **todos** los tags únicos de los ejercicios que contiene, permitiendo una vista rápida de los temas cubiertos.
+El sistema utiliza la siguiente lógica de "descubrimiento":
 
-### Ejemplo de resultado (frontmatter)
+1. **Escaneo directo**: Todos los archivos dentro de la carpeta del tema (ej: `analisis_vectorial/`) son incluidos automáticamente.
+2. **Escaneo de exámenes y tareas**: Para archivos fuera de la carpeta del tema, el sistema revisa el *frontmatter* y los incluye **SOLO SI** encuentra coincidencias con el tema en:
+    - **`tags`**: (Recomendado) Incluye el código del tema (ej: `analisis_vectorial`) en la lista.
+    - **`subject`**: El nombre de la asignatura o tema.
+    - **`keywords`**: Palabras clave relacionadas.
+
+**Ejemplo de Frontmatter para que un examen sea "visible":**
 ```yaml
+---
+title: Examen Parcial 1
+tags: 
+  - analisis_vectorial    # <--- CRÍTICO: Permite que el extractor lo encuentre
+  - stokes
+subject: Cálculo Superior
+---
+```
+
+> **Nota**: Si usas `--label` para seleccionar un ejercicio específico, el filtro de tema se ignora y el sistema buscará el ID en todos los archivos disponibles.
+
+### Propagación de tags (trazabilidad)
+
+`EvolutIA` asegura que los metadatos de los ejercicios originales se conserven en las variaciones generadas. Esto es crucial para mantener un registro de qué conceptos se están evaluando.
+
+**¿Cómo funciona?**
+1. **Lectura**: El sistema lee los tags del archivo fuente (`.md`) donde reside el ejercicio original.
+2. **Transferencia**: Al generar la variación, estos tags se copian al nuevo archivo generado.
+3. **Agregación**: El archivo final del examen (`examenX.md`) recopila automáticamente los tags de *todos* los ejercicios incluidos, generando un resumen temático del examen.
+
+#### Ejemplo práctico
+
+**1. Archivo fuente (ej: `matrices/semana11_practica.md`)**
+Este archivo contiene los ejercicios originales ("semilla") y define el contexto temático:
+
+```yaml
+---
+title: Ejercicios Semana 11
+tags: 
+  - autovalores        # Concepto clave
+  - diagonalizacion    # Concepto clave
+  - procedimental      # Tipo de competencia
+  - intermedio         # Nivel de dificultad
+subject: Matrices y Algebra Lineal
+---
+```
+
+**2. Archivo generado (ej: `examenes/examen1/ex1_e1.md`)**
+La variación generada hereda estos metadatos y agrega los suyos propios:
+
+```yaml
+---
 generator: evolutia
 source: ai_variation
-date: '2025-12-13T22:00:00'
-tags:
-  - autovalores
-  - diagonalizacion
-  - procedimental
-original_subject: Matrices - Semana 12
+tags: [autovalores, diagonalizacion, procedimental, intermedio] # <--- Tags heredados
+original_subject: Matrices y Algebra Lineal
+complexity: media
+---
 ```
+
 
 ## Estructura de archivos generados
 

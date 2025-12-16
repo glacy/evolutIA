@@ -79,8 +79,8 @@ Ejemplos:
     parser.add_argument(
         '--num_ejercicios',
         type=int,
-        default=4,
-        help='Número de ejercicios a generar (default: 4)'
+        default=1,
+        help='Número de ejercicios a generar (default: 1)'
     )
     
     parser.add_argument(
@@ -163,6 +163,14 @@ Ejemplos:
     )
     
     parser.add_argument(
+        '--label',
+        type=str,
+        nargs='+',
+        required=False,
+        help='ID(s) específico(s) del ejercicio a variar (ej: ex1-05). Si se usa, ignora num_ejercicios.'
+    )
+    
+    parser.add_argument(
         '--use_rag',
         action='store_true',
         help='Usar RAG para enriquecer generación con contexto del curso'
@@ -173,11 +181,17 @@ Ejemplos:
         action='store_true',
         help='Forzar re-indexación de materiales (solo con --use_rag)'
     )
+
+    parser.add_argument(
+        '--list',
+        action='store_true',
+        help='Listar todos los ejercicios encontrados y sus etiquetas sin generar nada'
+    )
     
     args = parser.parse_args()
     
     # Validar argumentos requeridos dependiendo del modo
-    if not args.reindex:
+    if not args.reindex and not args.list:
         if not args.tema:
             parser.error("el argumento --tema es requerido (a menos que se use --reindex)")
         if not args.output:
@@ -245,7 +259,11 @@ Ejemplos:
         logger.info("Paso 1: Extrayendo materiales didácticos...")
         extractor = MaterialExtractor(base_path)
         materials = []
-        topics = args.tema if isinstance(args.tema, list) else [args.tema]
+        # Manejar caso donde topic es None (ej: solo --list o --reindex)
+        if args.tema is None:
+            topics = []
+        else:
+            topics = args.tema if isinstance(args.tema, list) else [args.tema]
 
         for topic in topics:
             topic_materials = extractor.extract_by_topic(topic)
@@ -259,7 +277,7 @@ Ejemplos:
             logger.info("Buscando en todos los directorios...")
             # Buscar en todos los temas
             for topic_dir in base_path.iterdir():
-                if topic_dir.is_dir() and topic_dir.name not in ['_build', 'generador_examenes', 'examenes', 'tareas', 'proyecto']:
+                if topic_dir.is_dir() and topic_dir.name not in ['_build', 'evolutia', 'proyecto', '.git']:
                     materials.extend(extractor.extract_from_directory(topic_dir))
         
         if not materials:
@@ -275,6 +293,41 @@ Ejemplos:
         if not all_exercises:
             logger.error("No se encontraron ejercicios en los materiales")
             return 1
+        
+        # Si se solicitó listar, imprimir y salir
+        if args.list:
+            print(f"\n{'='*80}")
+            print(f"EJERCICIOS ENCONTRADOS ({len(all_exercises)})")
+            print(f"{'='*80}")
+            print(f"{'LABEL':<15} | {'ARCHIVO':<30} | {'PREVIEW':<30}")
+            print(f"{'-'*15}-+-{'-'*30}-+-{'-'*30}")
+            
+            for ex in all_exercises:
+                label = ex.get('label', 'N/A')
+                file_name = ex.get('source_file').name if ex.get('source_file') else 'Unknown'
+                content_preview = ex.get('content', '').replace('\n', ' ')[:27] + '...'
+                print(f"{label:<15} | {file_name:<30} | {content_preview:<30}")
+            
+            print(f"{'='*80}\n")
+            return 0
+        
+        if args.label:
+            logger.info(f"Filtrando por labels: {args.label}")
+            filtered = [ex for ex in all_exercises if ex.get('label') in args.label]
+            if not filtered:
+                available = [ex.get('label') for ex in all_exercises if ex.get('label')]
+                logger.error(f"No se encontraron ejercicios con los labels solicitados")
+                logger.error(f"Labels disponibles: {', '.join(available[:20])}..." if len(available) > 20 else f"Labels disponibles: {', '.join(available)}")
+                return 1
+            
+            # Warn about missing labels
+            found_labels = {ex.get('label') for ex in filtered}
+            missing = set(args.label) - found_labels
+            if missing:
+                logger.warning(f"No se encontraron los siguientes labels: {missing}")
+                
+            all_exercises = filtered
+            logger.info(f"Ejercicios encontrados: {len(all_exercises)}")
         
         logger.info(f"Encontrados {len(all_exercises)} ejercicios")
         
