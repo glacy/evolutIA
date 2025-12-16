@@ -220,6 +220,7 @@ class EnhancedVariationGenerator(VariationGenerator):
             'variation_content': variation_content,
             'variation_solution': variation_solution,
             'original_frontmatter': exercise.get('frontmatter', {}),
+            'original_label': exercise.get('label'),
             'type': exercise_type
         }
         

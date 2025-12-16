@@ -354,7 +354,11 @@ Ejemplos:
         exercises_with_analysis.sort(key=lambda x: x[1]['total_complexity'], reverse=True)
         
         # Seleccionar ejercicios base
-        selected_exercises = exercises_with_analysis[:args.num_ejercicios * 2]  # Tomar más para tener opciones
+        if args.label:
+             # Si se especificaron labels, usar TODOS los encontrados sin limitar
+            selected_exercises = exercises_with_analysis
+        else:
+            selected_exercises = exercises_with_analysis[:args.num_ejercicios * 2]  # Tomar más para tener opciones
         
         logger.info(f"Seleccionados {len(selected_exercises)} ejercicios candidatos")
         
@@ -445,65 +449,108 @@ Ejemplos:
             # Usar selected_exercises que viene de pasos anteriores
             # ... (código original de selección y bucle while)
             
+            # ... (código original de selección y bucle while)
+            
             import random
-            while len(valid_variations) < args.num_ejercicios and attempts < max_attempts:
-                # Seleccionar ejercicio base
-                # Preferir los de mayor complejidad, pero con algo de aleatoriedad
-                ejercicio_base, analysis = random.choice(selected_exercises[:max(5, len(selected_exercises)//2)])
+            
+            # Si hay labels, iterar sobre cada ejercicio seleccionado exactamente una vez
+            if args.label:
+                # Copia para no modificar la lista original si fuera necesario
+                target_exercises = list(selected_exercises)
+                logger.info(f"Generando variaciones para {len(target_exercises)} ejercicios específicos...")
                 
-                try:
-                    if args.type == 'multiple_choice':
-                         # Multiple choice includes solution in single generation step
-                         variation = generator.generate_variation(
-                            ejercicio_base, 
-                            analysis,
-                            exercise_type=args.type
-                        )
-                    elif not args.no_generar_soluciones:
-                        # Development type with solution (default)
-                        variation = generator.generate_variation_with_solution(
-                            ejercicio_base, 
-                            analysis
-                        )
-                    else:
-                        # Development type without solution
-                        variation = generator.generate_variation(
-                            ejercicio_base, 
-                            analysis,
-                            exercise_type=args.type
-                        )
-                    
-                    if variation:
-                        # Validar si es realmente más compleja (o consistente en caso de RAG)
-                        is_valid = False
-                        if args.use_rag:
-                             # En RAG validamos consistencia y estilo
-                             # validate(self, original_exercise, original_analysis, variation)
-                             validation = validator.validate(ejercicio_base, analysis, variation)
-                             is_valid = validation['is_valid'] # Use is_valid which combines consistency and complexity
-                        else:
-                            # Validar complejidad
-                            # var_analysis ya se calcula dentro de validate? No, validate llama a analyze internamente
-                            # validate(self, original_exercise, original_analysis, variation)
-                            
-                            validation = validator.validate(ejercicio_base, analysis, variation)
-                            
-                            if validation['is_valid']:
-                                is_valid = True
+                for ejercicio_base, analysis in target_exercises:
+                     attempt_count = 0
+                     success = False
+                     while not success and attempt_count < 3:
+                        try:
+                            if args.type == 'multiple_choice':
+                                 variation = generator.generate_variation(
+                                    ejercicio_base, 
+                                    analysis,
+                                    exercise_type=args.type
+                                )
+                            elif not args.no_generar_soluciones:
+                                variation = generator.generate_variation_with_solution(
+                                    ejercicio_base, 
+                                    analysis
+                                )
                             else:
-                                is_valid = False
+                                variation = generator.generate_variation(
+                                    ejercicio_base, 
+                                    analysis,
+                                    exercise_type=args.type
+                                )
+                            
+                            if variation:
+                                valid_variations.append(variation)
+                                success = True
+                            
+                        except Exception as e:
+                            logger.error(f"Error generando variación: {e}")
                         
-                        if is_valid:
-                            valid_variations.append(variation)
-                            logger.info(f"Variación generada exitosamente ({len(valid_variations)}/{args.num_ejercicios})")
+                        attempt_count += 1
+                        
+            # Si NO hay labels, usar lógica aleatoria basada en num_ejercicios
+            else:
+                while len(valid_variations) < args.num_ejercicios and attempts < max_attempts:
+                    # Seleccionar ejercicio base
+                    # Preferir los de mayor complejidad, pero con algo de aleatoriedad
+                    ejercicio_base, analysis = random.choice(selected_exercises[:max(5, len(selected_exercises)//2)])
+                
+                    try:
+                        if args.type == 'multiple_choice':
+                             # Multiple choice includes solution in single generation step
+                             variation = generator.generate_variation(
+                                ejercicio_base, 
+                                analysis,
+                                exercise_type=args.type
+                            )
+                        elif not args.no_generar_soluciones:
+                            # Development type with solution (default)
+                            variation = generator.generate_variation_with_solution(
+                                ejercicio_base, 
+                                analysis
+                            )
                         else:
-                            logger.info("Variación rechazada por validación")
-                except Exception as e:
-                    import traceback
-                    logger.error(f"Error generando variación: {e}")
-                    traceback.print_exc()
-                    continue              
-                attempts += 1
+                            # Development type without solution
+                            variation = generator.generate_variation(
+                                ejercicio_base, 
+                                analysis,
+                                exercise_type=args.type
+                            )
+                        
+                        if variation:
+                            # Validar si es realmente más compleja (o consistente en caso de RAG)
+                            is_valid = False
+                            if args.use_rag:
+                                 # En RAG validamos consistencia y estilo
+                                 # validate(self, original_exercise, original_analysis, variation)
+                                 validation = validator.validate(ejercicio_base, analysis, variation)
+                                 is_valid = validation['is_valid'] # Use is_valid which combines consistency and complexity
+                            else:
+                                # Validar complejidad
+                                # var_analysis ya se calcula dentro de validate? No, validate llama a analyze internamente
+                                # validate(self, original_exercise, original_analysis, variation)
+                                
+                                validation = validator.validate(ejercicio_base, analysis, variation)
+                                
+                                if validation['is_valid']:
+                                    is_valid = True
+                                else:
+                                    is_valid = False
+                            
+                            if is_valid:
+                                valid_variations.append(variation)
+                                logger.info(f"Variación generada exitosamente ({len(valid_variations)}/{args.num_ejercicios})")
+                            else:
+                                logger.info("Variación rechazada por validación")
+                    except Exception as e:
+                        import traceback
+                        logger.error(f"Error generando variación: {e}")
+                        traceback.print_exc()
+                        continue              
+                    attempts += 1
         
 
 

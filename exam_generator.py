@@ -241,6 +241,10 @@ class ExamGenerator:
                     current_metadata['original_subject'] = original_frontmatter['subject']
                 if 'complexity' in original_frontmatter:
                     current_metadata['complexity'] = original_frontmatter['complexity']
+                
+                # Add original label for traceability
+                if 'original_label' in variation and variation['original_label']:
+                     current_metadata['based_on'] = variation['original_label']
 
                 # Archivo de ejercicio
                 exercise_content = variation.get('variation_content', '')

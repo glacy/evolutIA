@@ -419,6 +419,7 @@ Debes responder ÚNICAMENTE con un objeto JSON válido con la siguiente estructu
             'variation_content': variation_content,
             'variation_solution': variation_solution,
             'original_frontmatter': exercise.get('frontmatter', {}),
+            'original_label': exercise.get('label'),
             'type': exercise_type
         }
     

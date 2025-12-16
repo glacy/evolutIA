@@ -50,14 +50,16 @@ def extract_exercise_blocks(content: str) -> List[Dict]:
     exercises = []
     
     # Patrón para bloques de ejercicio MyST
-    # Puede ser ```{exercise} o ````{exercise}
-    exercise_pattern = r'`{3,4}\{exercise\}(?:\s+\d+)?\s*\n:label:\s+(\S+)\s*\n(.*?)(?=`{3,4})'
+    # Captura delimitador (grupo 1), label (grupo 2) y contenido (grupo 3)
+    # Usa backreference \1 para coincidir con la longitud exacta del delimitador de cierre
+    exercise_pattern = r'(`{3,4})\{exercise\}(?:\s+\d+)?\s*\n:label:\s+(\S+)\s*\n(.*?)(?=\1)'
     
     matches = re.finditer(exercise_pattern, content, re.DOTALL)
     
     for match in matches:
-        label = match.group(1)
-        exercise_content = match.group(2).strip()
+        # group(1) es el delimitador
+        label = match.group(2)
+        exercise_content = match.group(3).strip()
         
         # Buscar si hay un include dentro
         include_match = re.search(r'```\{include\}\s+(.+?)\s*```', exercise_content, re.DOTALL)
@@ -99,14 +101,16 @@ def extract_solution_blocks(content: str) -> List[Dict]:
     solutions = []
     
     # Patrón para bloques de solución MyST
-    solution_pattern = r'`{3,4}\{solution\}\s+(\S+)\s*\n:label:\s+(\S+)\s*\n(.*?)(?=`{3,4})'
+    # Captura delimitador (grupo 1), exercise_label (grupo 2), solution_label (grupo 3), contenido (grupo 4)
+    solution_pattern = r'(`{3,4})\{solution\}\s+(\S+)\s*\n:label:\s+(\S+)\s*\n(.*?)(?=\1)'
     
     matches = re.finditer(solution_pattern, content, re.DOTALL)
     
     for match in matches:
-        exercise_label = match.group(1)
-        solution_label = match.group(2)
-        solution_content = match.group(3).strip()
+        # group(1) es delimitador
+        exercise_label = match.group(2)
+        solution_label = match.group(3)
+        solution_content = match.group(4).strip()
         
         # Buscar includes dentro de la solución
         include_matches = re.finditer(r'```\{include\}\s+(.+?)\s*```', solution_content, re.DOTALL)
