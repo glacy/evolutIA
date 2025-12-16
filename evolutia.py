@@ -399,12 +399,26 @@ Ejemplos:
                 ejercicio_base, analysis = random.choice(selected_exercises[:max(5, len(selected_exercises)//2)])
                 
                 try:
-                    # Generar variación
-                    variation = generator.generate_variation(
-                        ejercicio_base, 
-                        analysis,
-                        exercise_type=args.type
-                    )
+                    if args.type == 'multiple_choice':
+                         # Multiple choice includes solution in single generation step
+                         variation = generator.generate_variation(
+                            ejercicio_base, 
+                            analysis,
+                            exercise_type=args.type
+                        )
+                    elif not args.no_generar_soluciones:
+                        # Development type with solution (default)
+                        variation = generator.generate_variation_with_solution(
+                            ejercicio_base, 
+                            analysis
+                        )
+                    else:
+                        # Development type without solution
+                        variation = generator.generate_variation(
+                            ejercicio_base, 
+                            analysis,
+                            exercise_type=args.type
+                        )
                     
                     if variation:
                         # Validar si es realmente más compleja (o consistente en caso de RAG)
