@@ -550,6 +550,16 @@ python evolutia/config_manager.py --config ./evolutia_config.yaml
 
 Ejecuta este script cada vez que agregues nuevos temas o modifiques las palabras clave en los materiales de lectura.
 
+### Validación de Configuración (Schema)
+
+Evolutia incluye un sistema de validación estricta para el archivo de configuración (`evolutia_config.yaml`).
+
+- **JSON Schema**: La estructura válida se define en `evolutia/schemas/config.schema.json`.
+- **Validación Automática**: Cada vez que ejecutas `evolutia.py` o `config_manager.py`, el sistema verifica que tu archivo de configuración cumpla con el esquema.
+- **Errores Claros**: Si tu configuración tiene errores (campos faltantes, tipos incorrectos), el sistema detendrá la ejecución y te indicará exactamente dónde está el problema.
+
+Esto facilita la adopción de la herramienta por nuevos usuarios, reduciendo errores de configuración inicial.
+
 ## Estructura del repositorio (Contexto)
 
 El generador está diseñado para funcionar dentro de la estructura estándar del curso. A continuación se muestra el esquema de directorios esperado:
