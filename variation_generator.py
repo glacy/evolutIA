@@ -462,6 +462,8 @@ GENERA LA SOLUCIÓN COMPLETA:"""
             solution_content = self._call_anthropic_api(solution_prompt, model=self.model_name or "claude-3-opus-20240229")
         elif self.api_provider == "local":
             solution_content = self._call_local_api(solution_prompt)
+        elif self.api_provider == "gemini":
+            solution_content = self._call_gemini_api(solution_prompt, model=self.model_name)
         else:
             solution_content = None
         

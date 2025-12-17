@@ -197,9 +197,10 @@ Ejemplos:
     args = parser.parse_args()
     
     # Validar argumentos requeridos dependiendo del modo
+    # Validar argumentos requeridos dependiendo del modo
     if not args.reindex and not args.list and not args.query:
-        if not args.tema:
-            parser.error("el argumento --tema es requerido (a menos que se use --reindex, --list o --query)")
+        if not args.tema and not args.label:
+            parser.error("el argumento --tema es requerido (a menos que se use --label, --reindex, --list o --query)")
         if not args.output:
             parser.error("el argumento --output es requerido (a menos que se use --reindex, --list o --query)")
     
@@ -636,7 +637,9 @@ Ejemplos:
         metadata = {
             'model': getattr(generator, 'local_model', None) or getattr(generator, 'model_name', None) or args.api,
             'provider': args.api,
-            'rag_enabled': args.use_rag
+            'rag_enabled': args.use_rag,
+            'mode': args.mode,
+            'target_difficulty': args.complejidad
         }
         
         success = exam_gen.generate_exam(
