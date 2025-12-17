@@ -19,6 +19,7 @@ try:
     from variation_generator import VariationGenerator
     from complexity_validator import ComplexityValidator
     from exam_generator import ExamGenerator
+    from config_manager import ConfigManager
 except ImportError:
     # Fallback a imports relativos si se importa como módulo
     from .material_extractor import MaterialExtractor
@@ -26,6 +27,7 @@ except ImportError:
     from .variation_generator import VariationGenerator
     from .complexity_validator import ComplexityValidator
     from .exam_generator import ExamGenerator
+    from .config_manager import ConfigManager
 
 # Imports condicionales para RAG
 if True:  # Siempre intentar importar, fallar gracefully si no está disponible
@@ -241,8 +243,9 @@ Ejemplos:
     if args.api is None:
         try:
             if config_path and config_path.exists():
-                import yaml
-                full_config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
+                # Usar ConfigManager para cargar y validar
+                cm = ConfigManager(base_path, config_path)
+                full_config = cm.load_current_config()
                 args.api = full_config.get('api', {}).get('default_provider', 'openai')
             else:
                 args.api = 'openai'
@@ -454,12 +457,12 @@ Ejemplos:
         logger.info("Paso 4: Generando variaciones con mayor complejidad...")
         
         # Cargar configuración de API
-        # Cargar configuración de API
-        import yaml
         api_config = {}
         if config_path and config_path.exists():
             try:
-                full_config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
+                # Usar ConfigManager para cargar y validar
+                cm_api = ConfigManager(base_path, config_path)
+                full_config = cm_api.load_current_config()
                 api_config = full_config.get('api', {}).get(args.api, {})
             except Exception as e:
                 logger.warning(f"No se pudo cargar config: {e}")

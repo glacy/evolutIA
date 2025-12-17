@@ -8,6 +8,12 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Set, Any
 import sys
+import json
+try:
+    import jsonschema
+    JSONSCHEMA_AVAILABLE = True
+except ImportError:
+    JSONSCHEMA_AVAILABLE = False
 
 # Configurar logging
 logging.basicConfig(
@@ -49,13 +55,46 @@ class ConfigManager:
                self.config_path = self.base_path / 'evolutia' / 'config' / 'config.yaml'
         
         logger.info(f"Usando archivo de configuración: {self.config_path}")
+
+    def validate_config(self, config_data: Dict[str, Any]) -> bool:
+        """Valida la configuración contra el esquema JSON."""
+        if not JSONSCHEMA_AVAILABLE:
+            logger.warning("jsonschema no instalado, omitiendo validación de esquema.")
+            return True
+
+        # Buscar schema
+        # Intentar rutas relativas comunes
+        schema_path = Path(__file__).parent / 'schemas' / 'config.schema.json'
+        
+        if not schema_path.exists():
+             logger.warning(f"No se encontró esquema en {schema_path}, omitiendo validación.")
+             return True
+
+        try:
+            with open(schema_path, 'r', encoding='utf-8') as f:
+                schema = json.load(f)
+            
+            jsonschema.validate(instance=config_data, schema=schema)
+            logger.info("Configuración válida según esquema.")
+            return True
+        except jsonschema.exceptions.ValidationError as e:
+            logger.error(f"Error de validación de configuración: {e.message}")
+            logger.error(f"Ruta del error: {' -> '.join([str(p) for p in e.path])}")
+            return False
+        except Exception as e:
+            logger.error(f"Error inesperado validando esquema: {e}")
+            return False
         
     def load_current_config(self) -> Dict[str, Any]:
         """Carga la configuración actual si existe."""
         if self.config_path.exists():
             try:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
-                    return yaml.safe_load(f) or {}
+                    config = yaml.safe_load(f) or {}
+                    # Validate on load
+                    if config:
+                        self.validate_config(config)
+                    return config
             except Exception as e:
                 logger.error(f"Error leyendo config actual: {e}")
                 return {}

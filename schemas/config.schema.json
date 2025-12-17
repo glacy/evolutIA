@@ -1,0 +1,210 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Evolutia Configuration",
+    "description": "Configuration schema for Evolutia AI tool",
+    "type": "object",
+    "properties": {
+        "api": {
+            "type": "object",
+            "properties": {
+                "default_provider": {
+                    "type": "string"
+                },
+                "openai": {
+                    "$ref": "#/definitions/modelConfig"
+                },
+                "anthropic": {
+                    "$ref": "#/definitions/modelConfig"
+                },
+                "gemini": {
+                    "$ref": "#/definitions/modelConfig"
+                },
+                "local": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/modelConfig"
+                        },
+                        {
+                            "properties": {
+                                "base_url": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "default_provider"
+            ]
+        },
+        "paths": {
+            "type": "object",
+            "properties": {
+                "base_path": {
+                    "type": "string"
+                },
+                "materials_directories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "materials_directories"
+            ]
+        },
+        "complexity": {
+            "type": "object",
+            "properties": {
+                "min_complexity_increase": {
+                    "type": "number"
+                },
+                "min_improvements": {
+                    "type": "integer"
+                },
+                "weights": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^.*$": {
+                            "type": "number"
+                        }
+                    }
+                }
+            }
+        },
+        "exam": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "type": "object",
+                    "properties": {
+                        "subject": {
+                            "type": "string"
+                        },
+                        "points_per_exercise": {
+                            "type": "integer"
+                        },
+                        "duration_hours": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "keywords": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^.*$": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "logging": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                }
+            }
+        },
+        "rag": {
+            "type": "object",
+            "properties": {
+                "vector_store": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        },
+                        "persist_directory": {
+                            "type": "string"
+                        },
+                        "collection_name": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "type"
+                    ]
+                },
+                "embeddings": {
+                    "type": "object",
+                    "properties": {
+                        "provider": {
+                            "type": "string"
+                        },
+                        "model": {
+                            "type": "string"
+                        },
+                        "batch_size": {
+                            "type": "integer"
+                        }
+                    },
+                    "required": [
+                        "provider",
+                        "model"
+                    ]
+                },
+                "retrieval": {
+                    "type": "object",
+                    "properties": {
+                        "top_k": {
+                            "type": "integer"
+                        },
+                        "similarity_threshold": {
+                            "type": "number"
+                        },
+                        "use_metadata_filters": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "chunking": {
+                    "type": "object",
+                    "properties": {
+                        "chunk_size": {
+                            "type": "integer"
+                        },
+                        "chunk_overlap": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "required": [
+        "api",
+        "paths"
+    ],
+    "definitions": {
+        "modelConfig": {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string"
+                },
+                "temperature": {
+                    "type": "number"
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "api_key": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "model"
+            ]
+        }
+    }
+}

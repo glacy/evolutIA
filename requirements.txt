@@ -8,3 +8,4 @@ chromadb>=0.4.22
 sentence-transformers>=2.3.1
 tqdm>=4.66.0
 httpx>=0.26.0
+jsonschema>=4.0.0
