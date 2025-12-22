@@ -642,7 +642,7 @@ Para mejorar el sistema:
 
 ## Licencia
 
-Este proyecto es para uso académico interno.
+Este proyecto está bajo la Licencia Apache 2.0. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
 ## Reconocimientos
 
