@@ -20,6 +20,22 @@ El contenido base del curso se gestiona y despliega en **[Curvenote](https://gla
 - **Modo Creación**: Genera ejercicios nuevos desde cero basados en temas y tags del curso.
 - **Generación Paralela**: Utiliza concurrencia para acelerar drásticamente la generación de múltiples ejercicios.
 
+
+flowchart LR
+    A[📚 Materiales Didácticos<br>Lecturas, Tareas, Prácticas] --> B(🔍 Extracción y Análisis<br>Identifica ejercicios y conceptos)
+    B --> C{⚙️ Motor de Generación}
+    subgraph C [ ]
+        direction LR
+        D[Modo Variación<br>Incrementa complejidad]
+        E[Modo Creación<br>Nuevos ejercicios desde cero]
+    end
+    C --> F(🧠 Inteligencia Artificial<br>LLM + RAG opcional)
+    F --> G(✅ Validación<br>Verifica aumento de dificultad)
+    G --> H[📝 Generación de Archivos<br>Examen y Soluciones en MyST/Markdown]
+    H --> I(🎯 Evaluación Coherente y Desafiante)
+    I --> J(🚀 Generación Paralela<br>Concurrencia para acelerar)
+
+
 ## Requisitos
 
 - Python 3.8 o superior
