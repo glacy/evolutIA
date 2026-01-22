@@ -17,7 +17,8 @@ El contenido base del curso se gestiona y despliega en **[Curvenote](https://gla
 - **Formato consistente**: Genera archivos en formato MyST/Markdown compatible con Curvenote
 - **Multi-proveedor**: Soporte para OpenAI (GPT-4), Anthropic (Claude 3) y Google (Gemini 1.5).
 - **RAG (Retrieval-Augmented Generation)**: Utiliza apuntes de clase y ejercicios existentes para dar contexto.
-- **Modo Creación**: Genera ejercicios nuevos desde cero basados en temas y tags del curso
+- **Modo Creación**: Genera ejercicios nuevos desde cero basados en temas y tags del curso.
+- **Generación Paralela**: Utiliza concurrencia para acelerar drásticamente la generación de múltiples ejercicios.
 
 ## Requisitos
 
@@ -123,6 +124,8 @@ Si no se indica un tema, el sistema buscará en todos los archivos disponibles.
 - `--list`: Lista todos los ejercicios encontrados en los temas seleccionados y muestra sus etiquetas, archivo origen y preview.
 
 - `--query`: Realiza una búsqueda semántica en la base de datos RAG y muestra los fragmentos de texto más relevantes encontrados. Útil para verificar qué "sabe" el sistema sobre un tema.
+
+- `--workers`: Número de hilos simultáneos para la generación paralela (default: 5). Útil para ajustar el rendimiento o evitar límites de rate.
 
 ### Ejemplos
 
@@ -463,6 +466,9 @@ api:
     model: gemini-1.5-pro   # Cambiar modelo específico
 ```
 
+### Nota Importante sobre Configuración
+Para evitar errores de validación, asegúrate de que tu `evolutia_config.yaml` incluya la sección `api`. El sistema usa esto para determinar los modelos por defecto.
+
 ### Configuración Avanzada / Multi-Curso
 
 Para usar `evolutia` en múltiples cursos o sin modificar el código fuente:
@@ -603,7 +609,8 @@ tema1/
 
 ```
 evolutia/
-├── evolutia.py               # Script principal (punto de entrada)
+├── evolutia.py               # Script principal (CLI Wrapper)
+├── evolutia_engine.py        # Motor central de orquestación
 ├── config_manager.py         # Gestor de configuración automática
 ├── material_extractor.py     # Extracción de materiales
 ├── exercise_analyzer.py      # Análisis de complejidad
