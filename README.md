@@ -294,8 +294,8 @@ Edita `config/config.yaml` para personalizar RAG:
 
 rag:
   vector_store:
-    # Recomendación: Usa una ruta local en WSL (~/...) para evitar errores de sincronización con OneDrive
-    persist_directory: "~/evolutia_storage/mi_curso"
+    # Base de datos vectorial persistente
+    persist_directory: "./storage/vector_store"
     collection_name: "mi_curso_coleccion"
   embeddings:
     provider: openai
