@@ -166,16 +166,12 @@ class EnhancedVariationGenerator(VariationGenerator):
             # Pasamos el contexto ya recuperado a _create_prompt
             prompt = self._create_prompt(exercise, analysis, context=context)
 
+        # 3. Get Provider
+        provider = self._get_provider()
+        if not provider: return None
+
         # 4. Generar variación
-        content = None
-        if self.api_provider == "openai":
-            content = self._call_openai_api(prompt, model=self.model_name)
-        elif self.api_provider == "anthropic":
-            content = self._call_anthropic_api(prompt, model=self.model_name)
-        elif self.api_provider == "gemini":
-            content = self._call_gemini_api(prompt, model=self.model_name)
-        elif self.api_provider == "local":
-            content = self._call_local_api(prompt)
+        content = provider.generate_content(prompt, system_prompt="Eres un experto en métodos matemáticos para física e ingeniería.")
 
         if not content:
             return None
@@ -191,12 +187,12 @@ class EnhancedVariationGenerator(VariationGenerator):
                 clean_content = content.replace('```json', '').replace('```', '').strip()
 
                 # Fix common latex backslash issues in json string
+                clean_content_fixed = clean_content.replace('\\', '\\\\').replace('\\\\"', '\\"')
                 try:
-                     data = json.loads(clean_content, strict=False)
+                     data = json.loads(clean_content_fixed, strict=False)
                 except json.JSONDecodeError:
-                    # Fallback: simple escape for common latex backslashes
-                    clean_content_fixed = clean_content.replace('\\', '\\\\').replace('\\\\"', '\\"')
-                    data = json.loads(clean_content_fixed, strict=False)
+                    # Fallback: try original if valid
+                    data = json.loads(clean_content, strict=False)
 
                 variation_content = f"{data['question']}\n\n"
                 for opt, text in data['options'].items():
@@ -209,10 +205,6 @@ class EnhancedVariationGenerator(VariationGenerator):
         else:
             variation_content = content
             variation_solution = "Solución pendiente..."
-
-            # Intento de mejora de parsing standard si el modelo siguio instrucciones
-            parts = content.split("SOLUCIÓN REQUERIDA:")
-            # (Aunque esto depende del prompt base, asumimos comportamiento del nuevo prompt quiz o el base)
 
         variation = {
             'variation_content': variation_content,
@@ -248,19 +240,15 @@ class EnhancedVariationGenerator(VariationGenerator):
     def generate_variation_with_solution(self, exercise: Dict, analysis: Dict) -> Optional[Dict]:
         """
         Genera una variación con su solución usando RAG.
-
-        Args:
-            exercise: Información del ejercicio original
-            analysis: Análisis de complejidad del ejercicio original
-
-        Returns:
-            Diccionario con variación y solución o None si hay error
         """
         # Generar variación (ya usa RAG)
         variation = self.generate_variation(exercise, analysis)
 
         if not variation:
             return None
+            
+        provider = self._get_provider()
+        if not provider: return None
 
         # Generar solución (usar método del padre)
         solution_prompt = f"""Eres un experto en métodos matemáticos para física e ingeniería. Resuelve el siguiente ejercicio paso a paso, mostrando todos los cálculos y procedimientos.
@@ -278,16 +266,7 @@ INSTRUCCIONES:
 
 GENERA LA SOLUCIÓN COMPLETA:"""
 
-        if self.api_provider == "openai":
-            solution_content = self._call_openai_api(solution_prompt, model=self.model_name or "gpt-4")
-        elif self.api_provider == "anthropic":
-            solution_content = self._call_anthropic_api(solution_prompt, model=self.model_name or "claude-3-opus-20240229")
-        elif self.api_provider == "local":
-            solution_content = self._call_local_api(solution_prompt)
-        elif self.api_provider == "gemini":
-            solution_content = self._call_gemini_api(solution_prompt, model=self.model_name)
-        else:
-            solution_content = None
+        solution_content = provider.generate_content(solution_prompt)
 
         if solution_content:
             variation['variation_solution'] = solution_content
@@ -297,15 +276,6 @@ GENERA LA SOLUCIÓN COMPLETA:"""
     def generate_new_exercise_from_topic(self, topic: str, tags: list = None, difficulty: str = "alta", exercise_type: str = "development") -> Optional[Dict]:
         """
         Genera un ejercicio nuevo desde cero basado en un tema y tags.
-
-        Args:
-            topic: Tema principal (ej: "analisis_vectorial")
-            tags: Lista de tags específicos (ej: ["stokes", "teorema"])
-            difficulty: Nivel de dificultad (media, alta, muy_alta)
-            exercise_type: Tipo de ejercicio ('development' o 'multiple_choice')
-
-        Returns:
-            Diccionario con el nuevo ejercicio y su solución
         """
         if not self.retriever:
             logger.info("Generando sin contexto RAG (retriever no disponible)")
@@ -316,11 +286,11 @@ GENERA LA SOLUCIÓN COMPLETA:"""
 
         # Normalizar topic para manejar lista o string
         if isinstance(topic, list):
-            topic_list = topic
             topic_str = ", ".join(topic)
+            topic_list = topic
         else:
-            topic_list = [topic]
             topic_str = topic
+            topic_list = [topic]
 
         if self.retriever:
             # 1. Recuperar contexto teórico
@@ -333,7 +303,6 @@ GENERA LA SOLUCIÓN COMPLETA:"""
             context['related_exercises'] = related_exercises
 
         # 3. Construir prompt
-        # 3. Construir prompt
         if exercise_type == 'multiple_choice':
             # Preparar info para el prompt de quiz
             context_info = {
@@ -341,18 +310,13 @@ GENERA LA SOLUCIÓN COMPLETA:"""
             }
             prompt = self._create_quiz_prompt(context_info)
         else:
-            prompt = self._create_new_exercise_prompt(topic, tags, context, difficulty)
+            prompt = self._create_new_exercise_prompt(topic_str, tags, context, difficulty) # Use topic_str
 
-        # 4. Generar variación
-        content = None
-        if self.api_provider == "openai":
-            content = self._call_openai_api(prompt, model=self.model_name)
-        elif self.api_provider == "anthropic":
-            content = self._call_anthropic_api(prompt, model=self.model_name)
-        elif self.api_provider == "gemini":
-            content = self._call_gemini_api(prompt, model=self.model_name)
-        elif self.api_provider == "local":
-            content = self._call_local_api(prompt)
+        # 4. Get Provider and Generate
+        provider = self._get_provider()
+        if not provider: return None
+        
+        content = provider.generate_content(prompt)
 
         if not content:
             return None
@@ -367,7 +331,12 @@ GENERA LA SOLUCIÓN COMPLETA:"""
                 # Limpiar bloques de código si el LLM los puso
                 clean_content = content.replace('```json', '').replace('```', '').strip()
                 # strict=False permite caracteres de control como saltos de línea dentro de strings
-                data = json.loads(clean_content, strict=False)
+                # Also apply latex fix here
+                clean_content_fixed = clean_content.replace('\\', '\\\\').replace('\\\\"', '\\"')
+                try:
+                     data = json.loads(clean_content_fixed, strict=False)
+                except:
+                     data = json.loads(clean_content, strict=False)
 
                 # Formatear como ejercicio
                 exercise_text = f"{data['question']}\n\n"
@@ -404,68 +373,3 @@ GENERA LA SOLUCIÓN COMPLETA:"""
                 'type': exercise_type
             }
         }
-
-    def _create_new_exercise_prompt(self, topic: str, tags: list, context: Dict, difficulty: str) -> str:
-        """Crea el prompt para generar un ejercicio nuevo."""
-
-        context_str = self.context_enricher.format_context_dict(context)
-        tags_str = ", ".join(tags)
-
-        # Mapeo de dificultad a instrucciones
-        diff_instructions = {
-            "media": "El nivel debe ser 'Intermedio'. Enfócate en la aplicación directa de conceptos.",
-            "alta": "El nivel debe ser 'Avanzado'. Requiere combinar conceptos o realizar demostraciones no triviales.",
-            "muy_alta": "El nivel debe ser 'Desafío / Experto'. Requiere demostraciones abstractas, casos límite o síntesis creativa de múltiples temas."
-        }
-
-        difficulty_instruction = diff_instructions.get(difficulty, diff_instructions["alta"])
-
-        return f"""Eres un profesor experto en Métodos Matemáticos para Física e Ingeniería.
-Tu tarea es CREAR UN NUEVO EJERCICIO DE EXAMEN desde cero.
-No debes copiar los ejemplos, sino usar su estilo y nivel de dificultad como inspiración.
-
-TEMA PRINCIPAL: {topic}
-CONCEPTOS CLAVE (TAGS): {tags_str}
-DIFICULTAD OBJETIVO: {difficulty}
-
-CONTEXTO DEL CURSO (Material de referencia):
-{context_str}
-
-INSTRUCCIONES:
-1. Crea un ejercicio original que evalúe los conceptos indicados.
-2. {difficulty_instruction}
-3. Usa notación matemática LaTeX estándar.
-4. Incluye bloques :::{{math}} para ecuaciones importantes.
-5. El ejercicio debe tener una narrativa coherente (física o abstracta).
-
-FORMATO DE SALIDA REQUERIDO:
-EJERCICIO NUEVO:
-[Texto del enunciado del ejercicio aquí]
-
-SOLUCIÓN REQUERIDA:
-[Solución detallada paso a paso aquí]
-"""
-
-    def _call_gemini_api(self, prompt: str, model: str = None) -> str:
-        """Llama a la API de Google Gemini."""
-        try:
-            model_name = model or "gemini-2.5-pro"
-            # Mapeo de nombres si config usa short names
-            if model_name == 'gemini': model_name = "gemini-2.5-pro"
-
-            gen_model = genai.GenerativeModel(model_name)
-
-            # Configurar generation config si es necesario (temperatura, etc)
-            generation_config = genai.types.GenerationConfig(
-                temperature=0.7,
-            )
-
-            response = gen_model.generate_content(
-                prompt,
-                generation_config=generation_config
-            )
-
-            return response.text
-        except Exception as e:
-            logger.error(f"Error llamando a Gemini API: {e}")
-            return ""
