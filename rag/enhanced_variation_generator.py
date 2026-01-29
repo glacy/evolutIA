@@ -181,30 +181,26 @@ class EnhancedVariationGenerator(VariationGenerator):
         variation_solution = ""
 
         if exercise_type == 'multiple_choice':
-            try:
-                import json
-                import re
-                clean_content = content.replace('```json', '').replace('```', '').strip()
-
-                # Fix common latex backslash issues in json string
-                clean_content_fixed = clean_content.replace('\\', '\\\\').replace('\\\\"', '\\"')
-                try:
-                     data = json.loads(clean_content_fixed, strict=False)
-                except json.JSONDecodeError:
-                    # Fallback: try original if valid
-                    data = json.loads(clean_content, strict=False)
-
+            data = extract_and_parse_json(content)
+            
+            if data and 'question' in data and 'options' in data:
                 variation_content = f"{data['question']}\n\n"
                 for opt, text in data['options'].items():
                     variation_content += f"- **{opt})** {text}\n"
-
-                variation_solution = f"**Respuesta Correcta: {data['correct_option']}**\n\n{data['explanation']}"
-            except Exception as e:
-                logger.error(f"Error parseando JSON de quiz en variación: {e}")
-                variation_content = content
+                
+                variation_solution = f"**Respuesta Correcta: {data.get('correct_option', '?')}**\n\n{data.get('explanation', '')}"
+            else:
+                 logger.warning("No se pudo parsear el JSON del quiz (enhanced), usando contenido raw")
+                 variation_content = content
         else:
             variation_content = content
             variation_solution = "Solución pendiente..."
+            
+            # Intento de mejora de parsing standard si el modelo siguio instrucciones
+            parts = content.split("SOLUCIÓN REQUERIDA:")
+            if len(parts) == 2:
+                 # Si el modelo siguió las instrucciones de separar con esa marca (no siempre garantizado en simple variation)
+                 pass
 
         variation = {
             'variation_content': variation_content,
@@ -326,30 +322,17 @@ GENERA LA SOLUCIÓN COMPLETA:"""
         solution_text = ""
 
         if exercise_type == 'multiple_choice':
-            try:
-                import json
-                # Limpiar bloques de código si el LLM los puso
-                clean_content = content.replace('```json', '').replace('```', '').strip()
-                # strict=False permite caracteres de control como saltos de línea dentro de strings
-                # Also apply latex fix here
-                clean_content_fixed = clean_content.replace('\\', '\\\\').replace('\\\\"', '\\"')
-                try:
-                     data = json.loads(clean_content_fixed, strict=False)
-                except:
-                     data = json.loads(clean_content, strict=False)
-
-                # Formatear como ejercicio
+            data = extract_and_parse_json(content)
+            
+            if data and 'question' in data:
                 exercise_text = f"{data['question']}\n\n"
-                for opt, text in data['options'].items():
+                for opt, text in data.get('options', {}).items():
                     exercise_text += f"- **{opt})** {text}\n"
-
-                # Formatear solución
-                solution_text = f"**Respuesta Correcta: {data['correct_option']}**\n\n{data['explanation']}"
-            except Exception as e:
-                logger.error(f"Error parseando JSON de quiz: {e}")
-                # Fallback: usar texto crudo
-                exercise_text = content
-                solution_text = "Verificar formato generado."
+                solution_text = f"**Respuesta Correcta: {data.get('correct_option', '?')}**\n\n{data.get('explanation', '')}"
+            else:
+                 logger.error("No se pudo parsear JSON de quiz nuevo")
+                 exercise_text = content
+                 solution_text = "Verificar formato generado."
         else:
             # Parseo normal de ejercicio de desarrollo
             parts = content.split("SOLUCIÓN REQUERIDA:")
@@ -360,12 +343,9 @@ GENERA LA SOLUCIÓN COMPLETA:"""
                 exercise_text = content
                 solution_text = ""
 
-        variation_content = exercise_text
-        variation_solution = solution_text
-
         return {
-            'variation_content': variation_content,
-            'variation_solution': variation_solution,
+            'variation_content': exercise_text,
+            'variation_solution': solution_text,
             'original_frontmatter': {
                 'subject': topic_str,
                 'tags': tags,
