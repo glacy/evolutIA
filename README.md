@@ -2,11 +2,6 @@
 
 Sistema automatizado para generar preguntas de examen desafiantes basadas en materiales didácticos existentes (lecturas, prácticas, tareas). El sistema aumenta la complejidad matemática de los ejercicios mientras mantiene el formato y estructura familiar.
 
-## Contexto del proyecto
-
-EvolutIA nace como una herramienta complementaria para el curso **Métodos Matemáticos para Física e Ingeniería I (MMFI1)** del TEC.
-
-El contenido base del curso se gestiona y despliega en **[Curvenote](https://glacy-mmfi1.curve.space/)**. Este generador utiliza dichos materiales (alojados en este mismo repositorio) como "semilla" para crear evaluaciones nuevas que mantienen coherencia temática y estilística con el sitio web del curso.
 
 ## Características
 
@@ -19,6 +14,7 @@ El contenido base del curso se gestiona y despliega en **[Curvenote](https://gla
 - **RAG (Retrieval-Augmented Generation)**: Utiliza apuntes de clase y ejercicios existentes para dar contexto.
 - **Modo Creación**: Genera ejercicios nuevos desde cero basados en temas y tags del curso.
 - **Generación Paralela**: Utiliza concurrencia para acelerar drásticamente la generación de múltiples ejercicios.
+- **Parseo Robusto**: Sistema avanzado para manejar y limpiar JSON con alta densidad de LaTeX.
 
 ```mermaid
 flowchart LR
@@ -631,6 +627,7 @@ evolutia/
 ├── material_extractor.py     # Extracción de materiales
 ├── exercise_analyzer.py      # Análisis de complejidad
 ├── variation_generator.py    # Generación de variaciones
+├── llm_providers.py          # Proveedores de LLM (OpenAI, Anthropic, Gemini, Local)
 ├── complexity_validator.py   # Validación de complejidad
 ├── exam_generator.py         # Generación de archivos
 ├── rag/                      # Sistema RAG (opcional)
@@ -649,7 +646,8 @@ evolutia/
 │   └── exercise_template.md  # Plantilla de ejercicio
 ├── utils/
 │   ├── markdown_parser.py    # Parser de Markdown
-│   └── math_extractor.py     # Extracción de matemáticas
+│   ├── math_extractor.py     # Extracción de matemáticas
+│   └── json_parser.py        # Parser robusto de JSON (LaTeX friendly)
 ├── requirements.txt          # Dependencias
 └── README.md                 # Esta documentación
 ```
