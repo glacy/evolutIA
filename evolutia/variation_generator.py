@@ -58,7 +58,201 @@ class VariationGenerator:
             return None
             
         return self._provider_instance
-    
+
+    def _create_prompt(self, exercise: Dict, analysis: Dict) -> str:
+        """Crea el prompt para generar una variación."""
+        
+        content = exercise.get('content', '')
+        complexity = analysis.get('total_complexity', 0)
+        concepts = ", ".join(analysis.get('concepts', []))
+        
+        prompt = f"""Actúa como un profesor experto de física y matemáticas universitarias.
+Tu tarea es crear una VARIACIÓN de un ejercicio existente.
+
+EJERCICIO ORIGINAL:
+{content}
+
+ANÁLISIS DE COMPLEJIDAD ORIGINAL:
+- Complejidad: {complexity:.2f}
+- Conceptos: {concepts}
+
+OBJETIVO:
+Generar una nueva versión del ejercicio que sea MÁS COMPLEJA y DESAFIANTE, pero evaluando los mismos principios fundamentales.
+
+ESTRATEGIAS PARA AUMENTAR COMPLEJIDAD:
+1. Cambia las variables numéricas por parámetros simbólicos (a, b, R, etc.)
+2. Introduce sistemas de coordenadas diferentes (cilíndricas/esféricas) si aplica
+3. Combina múltiples conceptos en un solo problema
+4. Agrega una restricción o condición de borde adicional
+5. Pide una generalización del resultado
+
+REGLAS DE FORMATO:
+1. Usa Markdown estándar
+2. Usa LaTeX para matemáticas (bloques :::math o $$...$$)
+3. La salida debe contener DOS PARTES separadas por "SOLUCIÓN REQUERIDA:"
+   - Parte 1: El enunciado del nuevo ejercicio (encabezado con "EJERCICIO VARIADO:")
+   - Parte 2: La solución paso a paso
+   
+Genera solo el contenido solicitado."""
+        return prompt
+
+    def _create_quiz_prompt(self, context_info: Dict) -> str:
+        """Crea prompt para ejercicios de selección única."""
+        content = context_info.get('content', '')
+        
+        prompt = f"""Actúa como un profesor experto. Genera una pregunta de examen de tipo SELECCIÓN ÚNICA (Quiz) basada en el siguiente material:
+
+MATERIAL BASE:
+{content}
+
+REQUISITOS:
+1. La pregunta debe ser conceptual y desafiante.
+2. Genera 4 opciones (A, B, C, D).
+3. Solo una opción debe ser correcta, las otras deben ser distractores plausibles.
+4. Devuelve la respuesta EXCLUSIVAMENTE en formato JSON válido:
+{{
+  "question": "Enunciado de la pregunta en Markdown...",
+  "options": {{
+    "A": "Texto opción A",
+    "B": "Texto opción B",
+    "C": "Texto opción C",
+    "D": "Texto opción D"
+  }},
+  "correct_option": "A",
+  "explanation": "Explicación detallada de por qué es la correcta..."
+}}
+"""
+        return prompt
+
+    def generate_variation(self, exercise: Dict, analysis: Dict, exercise_type: str = "development") -> Optional[Dict]:
+        """
+        Genera una variación de un ejercicio existente.
+        """
+        # 1. Crear prompt según tipo
+        if exercise_type == 'multiple_choice':
+            context_info = {
+                'content': f"Ejercicio Original:\n{exercise.get('content')}"
+            }
+            prompt = self._create_quiz_prompt(context_info)
+        else:
+            prompt = self._create_prompt(exercise, analysis)
+            
+        # 2. Get Provider
+        provider = self._get_provider()
+        if not provider: return None
+        
+        # 3. Generar
+        content = provider.generate_content(prompt, system_prompt="Eres un experto en diseño de exámenes de ingeniería.")
+        
+        if not content:
+            return None
+            
+        # 4. Parsear respuesta
+        variation_content = ""
+        variation_solution = ""
+        
+        if exercise_type == 'multiple_choice':
+            data = extract_and_parse_json(content)
+            if data and 'question' in data:
+                variation_content = f"{data['question']}\n\n"
+                for opt, text in data.get('options', {}).items():
+                    variation_content += f"- **{opt})** {text}\n"
+                variation_solution = f"**Respuesta Correcta: {data.get('correct_option', '?')}**\n\n{data.get('explanation', '')}"
+            else:
+                variation_content = content
+                variation_solution = "Error parseando JSON de quiz."
+        else:
+            # Parseo texto plano
+            parts = content.split("SOLUCIÓN REQUERIDA:")
+            if len(parts) == 2:
+                variation_content = parts[0].replace("EJERCICIO VARIADO:", "").strip()
+                variation_solution = parts[1].strip()
+            else:
+                variation_content = content
+                variation_solution = ""
+
+        return {
+            'variation_content': variation_content,
+            'variation_solution': variation_solution,
+            'original_frontmatter': exercise.get('frontmatter', {}),
+            'original_label': exercise.get('label'),
+            'type': exercise_type
+        }
+
+    def _create_new_exercise_prompt(self, topic: str, tags: list, context: Dict, difficulty: str) -> str:
+        """Crea prompt para ejercicio nuevo desde cero."""
+        tags_str = ", ".join(tags)
+        
+        prompt = f"""Diseña un NUEVO ejercicio de examen universitario para:
+Asignatura/Tema: {topic}
+Conceptos Clave (Tags): {tags_str}
+Nivel de Dificultad: {difficulty.upper()} (donde ALTA implica demostraciones o conexiones no triviales).
+
+INSTRUCCIONES:
+1. Crea un problema original que evalúe comprensión profunda.
+2. No copies ejercicios de libros de texto.
+3. Formato de salida:
+   EJERCICIO NUEVO:
+   [Enunciado en Markdown con LaTeX]
+   
+   SOLUCIÓN REQUERIDA:
+   [Solución paso a paso]
+"""
+        return prompt
+
+    def generate_new_exercise_from_topic(self, topic: str, tags: list = None, difficulty: str = "alta", exercise_type: str = "development") -> Optional[Dict]:
+        """
+        Genera un ejercicio nuevo desde cero.
+        """
+        tags = tags or []
+        context = {} # Base implementations doesn't use context
+        
+        # 1. Crear prompt
+        if exercise_type == 'multiple_choice':
+             context_info = {
+                'content': f"Tema: {topic}\nTags: {', '.join(tags)}\nDificultad: {difficulty}"
+            }
+             prompt = self._create_quiz_prompt(context_info)
+        else:
+             prompt = self._create_new_exercise_prompt(topic, tags, context, difficulty)
+             
+        # 2. Get Provider
+        provider = self._get_provider()
+        if not provider: return None
+        
+        # 3. Generar
+        content = provider.generate_content(prompt)
+        if not content: return None
+        
+        # 4. Parsear
+        # Reutilizamos lógica simple de parseo
+        if exercise_type == 'multiple_choice':
+            data = extract_and_parse_json(content)
+            if data and 'question' in data:
+                 var_content = f"{data['question']}\n\n"
+                 # ... (simplificado, igual que arriba)
+                 for k, v in data.get('options',{}).items():
+                     var_content += f"- **{k})** {v}\n"
+                 var_sol = f"R: {data.get('correct_option')}. {data.get('explanation')}"
+            else:
+                 var_content = content
+                 var_sol = ""
+        else:
+            parts = content.split("SOLUCIÓN REQUERIDA:")
+            if len(parts) == 2:
+                var_content = parts[0].replace("EJERCICIO NUEVO:", "").strip()
+                var_sol = parts[1].strip()
+            else:
+                var_content = content
+                var_sol = ""
+                
+        return {
+             'variation_content': var_content,
+             'variation_solution': var_sol,
+             'original_frontmatter': {'topic': topic, 'tags': tags},
+             'type': exercise_type
+        }
+
     def generate_variation_with_solution(self, exercise: Dict, analysis: Dict) -> Optional[Dict]:
         """
         Genera una variación con su solución.
@@ -69,22 +263,18 @@ class VariationGenerator:
         if not variation:
             return None
             
+        # Si ya tiene solución (porque el prompt único la pidió), retornarla
+        if variation.get('variation_solution'):
+            return variation
+            
         provider = self._get_provider()
         if not provider: return None
         
-        # Luego generar la solución
-        solution_prompt = f"""Eres un experto en métodos matemáticos para física e ingeniería. Resuelve el siguiente ejercicio paso a paso, mostrando todos los cálculos y procedimientos.
-
+        # Si no, generar la solución por separado (fallback legacy)
+        solution_prompt = f"""Eres un experto en métodos matemáticos. Resuelve el siguiente ejercicio paso a paso:
+        
 EJERCICIO:
 {variation['variation_content']}
-
-INSTRUCCIONES:
-1. Resuelve el ejercicio de forma completa y detallada
-2. Muestra todos los pasos intermedios
-3. Usa notación matemática LaTeX correcta
-4. Explica el razonamiento cuando sea necesario
-5. Usa bloques :::{{math}} para ecuaciones display y $...$ para inline
-6. Escribe en español
 
 GENERA LA SOLUCIÓN COMPLETA:"""
         

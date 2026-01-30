@@ -51,12 +51,14 @@ class ConfigManager:
             if root_config.exists():
                 self.config_path = root_config
             else:
-               # Default interno: evolutia/config/config.yaml
-               # self.base_path suele ser root
-               # Si base_path es root, la config está en root/evolutia/config/config.yaml
-               self.config_path = self.base_path / 'evolutia' / 'config' / 'config.yaml'
+               # Default interno: ubicado en el paquete instalado
+               # Obtenemos la ruta de este archivo (config_manager.py) -> parent (evolutia/) -> config -> config.yaml
+               self.config_path = Path(__file__).parent / 'config' / 'config.yaml'
         
-        logger.info(f"Usando archivo de configuración: {self.config_path}")
+        if self.config_path.exists():
+            logger.info(f"Usando archivo de configuración: {self.config_path}")
+        else:
+            logger.info(f"Archivo de configuración no encontrado en {self.config_path}. Usando configuración por defecto.")
 
     def validate_config(self, config_data: Dict[str, Any]) -> bool:
         """Valida la configuración contra el esquema JSON."""

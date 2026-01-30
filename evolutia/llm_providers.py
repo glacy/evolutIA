@@ -13,6 +13,8 @@ class LLMProvider(ABC):
 
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name
+        self.client = None
+        self.genai = None # For Gemini
         self.api_key = self._get_api_key()
         if self.api_key:
             self._setup_client()

@@ -7,6 +7,10 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el directorio actual (donde el usuario ejecuta el comando)
+load_dotenv()
 
 # Add current directory to path so we can import 'evolutia' package if running locally without install
 sys.path.insert(0, str(Path(__file__).parent))
