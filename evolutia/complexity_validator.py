@@ -5,12 +5,8 @@ Verifica que las variaciones generadas sean más complejas que los originales.
 import logging
 from typing import Dict
 
-try:
-    from exercise_analyzer import ExerciseAnalyzer
-    from utils.math_extractor import extract_math_expressions, estimate_complexity
-except ImportError:
-    from .exercise_analyzer import ExerciseAnalyzer
-    from .utils.math_extractor import extract_math_expressions, estimate_complexity
+from .exercise_analyzer import ExerciseAnalyzer
+from .utils.math_extractor import extract_math_expressions, estimate_complexity
 
 
 logger = logging.getLogger(__name__)

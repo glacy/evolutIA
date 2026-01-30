@@ -1,6 +1,6 @@
 
 import pytest
-from utils.math_extractor import (
+from evolutia.utils.math_extractor import (
     extract_math_expressions,
     extract_variables,
     count_math_operations,

@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 # Imports for new Provider system
-from llm_providers import get_provider
-from utils.json_parser import extract_and_parse_json
+from .llm_providers import get_provider
+from .utils.json_parser import extract_and_parse_json
 
 # Cargar variables de entorno explícitamente desde el directorio del script
 env_path = Path(__file__).parent / '.env'

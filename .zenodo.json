@@ -1,0 +1,20 @@
+{
+    "title": "evolutIA",
+    "description": "Evolutia es un motor de evaluación inteligente diseñado para educación superior en ciencias e ingeniería. Utiliza LLMs y RAG",
+    "creators": [
+        {
+            "name": "Lacy-Mora, Gerardo",
+            "orcid": "0000-0003-4361-3758"
+        }
+    ],
+    "access_right": "open",
+    "license": "Apache-2.0",
+    "keywords": [
+        "education",
+        "exam-generation",
+        "llm",
+        "rag",
+        "python"
+    ],
+    "upload_type": "software"
+}

@@ -38,26 +38,30 @@ flowchart LR
 - API key de OpenAI o Anthropic (Claude)
 - Opcional: Servidor LLM local (Ollama, LM Studio) para generación offline
 
-## Instalación
+### Instalación
 
-1. **Clonar o copiar el directorio `evolutia/`**
+1.  Clona el repositorio:
+    ```bash
+    git clone https://github.com/glacy/evolutIA.git
+    cd evolutia
+    ```
 
-2. **Instalar dependencias**:
-```bash
-cd evolutia
-pip install -r requirements.txt
+2.  Crea y activa un entorno virtual:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # En Windows: venv\Scripts\activate
+    ```
 
-# Para correr las pruebas:
-python -m pytest tests/
-```
+3.  Instala el paquete en modo editable (esto instalará también las dependencias):
+    ```bash
+    pip install -e .
+    ```
 
-3. **Configurar API keys**:
-
-   Copia el archivo de ejemplo:
-   ```bash
-   cp .env.example .env
-   ```
-   
+4.  Configura las variables de entorno:
+    ```bash
+    cp .env.example .env
+    # Edita .env con tus API keys
+    ```
    Y edita `.env` con tus claves reales:
    ```
    OPENAI_API_KEY=sk-tu-api-key-aqui
@@ -158,13 +162,27 @@ python evolutia.py \
   --output examenes/examen4
 ```
 
+### Uso Básico
+
+Una vez instalado, puedes usar el comando `evolutia` (o ejecutar el wrapper `python evolutia_cli.py`):
+
+1.  **Analizar el repositorio y entender la estructura:**
+    ```bash
+    evolutia --analyze
+    ```
+    *(Esto generará `config.yaml` si no existe)*
+
+2.  **Generar examen con variaciones de ejercicios existentes:**
+    ```bash
+    evolutia --exam-number 1 --num-ejercicios 3 --tema "Derivadas" --complejidad "media"
+    ```
 **Generar examen SIN soluciones:**
 ```bash
 python evolutia.py \
   --tema matrices \
   --num_ejercicios 3 \
   --no_generar_soluciones \
-  --output examenes/examen4
+  --output examenes/examen5
 ```
 
 **Generar examen con complejidad muy alta:**
@@ -671,8 +689,4 @@ Este proyecto fue desarrollado utilizando asistencia de Inteligencia Artificial:
 
 - **Cursor**: Entorno de desarrollo asistido por IA.
 - **Antigravity** (Google DeepMind): Agente de codificación y planificación avanzado.
-
-## Contacto
-
-Para preguntas o sugerencias, glacy@tec.ac.cr.
 

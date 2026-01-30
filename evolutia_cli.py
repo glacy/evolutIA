@@ -8,11 +8,11 @@ import logging
 import sys
 from pathlib import Path
 
-# Agregar el directorio actual al path para imports
-script_dir = Path(__file__).parent
-sys.path.insert(0, str(script_dir))
+# Add current directory to path so we can import 'evolutia' package if running locally without install
+sys.path.insert(0, str(Path(__file__).parent))
 
-from evolutia_engine import EvolutiaEngine
+from evolutia.evolutia_engine import EvolutiaEngine
+from evolutia.config_manager import ConfigManager
 
 # Configurar logging
 logging.basicConfig(

@@ -1,6 +1,6 @@
 
 import pytest
-from exercise_analyzer import ExerciseAnalyzer
+from evolutia.exercise_analyzer import ExerciseAnalyzer
 
 @pytest.fixture
 def analyzer():

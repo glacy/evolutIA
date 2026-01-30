@@ -51,7 +51,9 @@ class ConfigManager:
             if root_config.exists():
                 self.config_path = root_config
             else:
-               # Default interno
+               # Default interno: evolutia/config/config.yaml
+               # self.base_path suele ser root
+               # Si base_path es root, la config está en root/evolutia/config/config.yaml
                self.config_path = self.base_path / 'evolutia' / 'config' / 'config.yaml'
         
         logger.info(f"Usando archivo de configuración: {self.config_path}")

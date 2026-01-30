@@ -5,9 +5,10 @@ import unittest
 from pathlib import Path
 
 # Add project root to path
+# Add project root to path if needed (implicit in pytest usually, but good for safety)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.json_parser import extract_and_parse_json
+from evolutia.utils.json_parser import extract_and_parse_json
 
 class TestJsonParser(unittest.TestCase):
     

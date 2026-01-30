@@ -11,12 +11,12 @@ from typing import List, Dict, Optional, Tuple, Any
 from tqdm import tqdm
 
 # Imports from internal modules
-from material_extractor import MaterialExtractor
-from exercise_analyzer import ExerciseAnalyzer
-from variation_generator import VariationGenerator
-from complexity_validator import ComplexityValidator
-from exam_generator import ExamGenerator
-from config_manager import ConfigManager
+from .material_extractor import MaterialExtractor
+from .exercise_analyzer import ExerciseAnalyzer
+from .variation_generator import VariationGenerator
+from .complexity_validator import ComplexityValidator
+from .exam_generator import ExamGenerator
+from .config_manager import ConfigManager
 
 # Conditional RAG imports
 try:

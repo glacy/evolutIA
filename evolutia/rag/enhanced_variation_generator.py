@@ -7,26 +7,20 @@ from typing import Dict, Optional
 import google.generativeai as genai
 
 try:
-    from variation_generator import VariationGenerator
+    from ..variation_generator import VariationGenerator
 except ImportError:
-    try:
-        from ..variation_generator import VariationGenerator
-    except ImportError:
-        import sys
-        from pathlib import Path
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from variation_generator import VariationGenerator
+    # Fallback for standalone execution tests (though discouraged in package)
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent.parent))
+    from variation_generator import VariationGenerator
 
 try:
-    from rag.rag_retriever import RAGRetriever
-    from rag.context_enricher import ContextEnricher
+    from .rag_retriever import RAGRetriever
+    from .context_enricher import ContextEnricher
 except ImportError:
-    try:
-        from .rag_retriever import RAGRetriever
-        from .context_enricher import ContextEnricher
-    except ImportError:
-        from rag_retriever import RAGRetriever
-        from context_enricher import ContextEnricher
+    from rag_retriever import RAGRetriever
+    from context_enricher import ContextEnricher
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: evolutia
+Version: 0.1.0
+License-File: LICENSE
+Requires-Dist: PyYAML
+Requires-Dist: requests
+Requires-Dist: python-dotenv
+Requires-Dist: openai
+Requires-Dist: anthropic
+Requires-Dist: google-generativeai
+Requires-Dist: tqdm
+Dynamic: license-file
+Dynamic: requires-dist

@@ -6,16 +6,8 @@ import yaml
 from pathlib import Path
 from typing import Dict, Optional, Any, List
 
-try:
-    from rag.rag_indexer import RAGIndexer
-    from rag.rag_retriever import RAGRetriever
-except ImportError:
-    try:
-        from .rag_indexer import RAGIndexer
-        from .rag_retriever import RAGRetriever
-    except ImportError:
-        from rag_indexer import RAGIndexer
-        from rag_retriever import RAGRetriever
+from .rag_indexer import RAGIndexer
+from .rag_retriever import RAGRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +35,17 @@ class RAGManager:
             # Intentar buscar en root, luego default interno
             import sys
             # Si estamos en un paquete o script, buscar relativo
-            script_dir = Path(__file__).parent.parent
-            root_config = script_dir.parent / 'evolutia_config.yaml'
+            # __file__ está en evolutia/config_manager.py
+            # parent = evolutia/
+            # parent.parent = root/
+            pkg_dir = Path(__file__).parent
+            root_dir = pkg_dir.parent
+            root_config = root_dir / 'evolutia_config.yaml'
+            
             if root_config.exists():
                 config_path = root_config
             else:
-               config_path = script_dir / 'config' / 'config.yaml'
+               config_path = pkg_dir / 'config' / 'config.yaml'
         
         try:
             with open(config_path, 'r', encoding='utf-8') as f:

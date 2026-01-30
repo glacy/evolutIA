@@ -1,0 +1,7 @@
+PyYAML
+requests
+python-dotenv
+openai
+anthropic
+google-generativeai
+tqdm

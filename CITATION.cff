@@ -1,0 +1,18 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it using these metadata."
+title: "EvolutIA"
+abstract: "Sistema automatizado para generar preguntas de examen desafiantes basadas en materiales didácticos existentes (lecturas, prácticas, tareas) utilizando LLMs y RAG."
+authors:
+  - family-names: Lacy-Mora
+    given-names: Gerardo
+    orcid: "https://orcid.org/0000-0003-4361-3758"
+version: 1.0.0
+date-released: 2026-01-29
+license: Apache-2.0
+repository-code: "https://github.com/glacy/evolutIA"
+keywords:
+  - education
+  - exam-generation
+  - llm
+  - rag
+  - python

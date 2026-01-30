@@ -1,7 +1,7 @@
 
 import pytest
 from unittest.mock import MagicMock
-from complexity_validator import ComplexityValidator
+from evolutia.complexity_validator import ComplexityValidator
 
 @pytest.fixture
 def validator():
