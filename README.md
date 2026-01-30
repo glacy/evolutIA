@@ -40,6 +40,16 @@ flowchart LR
 
 ### Instalación
 
+#### Instalación desde PyPI (Uso General)
+
+Para instalar la última versión estable directamente desde PyPI:
+
+```bash
+pip install evolutia
+```
+
+#### Instalación desde fuente (Desarrollo)
+
 1.  Clona el repositorio:
     ```bash
     git clone https://github.com/glacy/evolutIA.git
