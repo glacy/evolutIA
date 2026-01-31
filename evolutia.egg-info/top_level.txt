@@ -1,2 +1,0 @@
-evolutia
-evolutia_cli

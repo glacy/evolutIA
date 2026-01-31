@@ -5,6 +5,11 @@ Todas las variaciones notables de este proyecto serán documentadas en este arch
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Mantenimiento
+- Migración del paquete `google.generativeai` a `google.genai` para resolver advertencias de deprecación (FutureWarning) y asegurar compatibilidad futura.
+
 ## [0.1.0] - 2026-01-30
 
 ### Añadido
