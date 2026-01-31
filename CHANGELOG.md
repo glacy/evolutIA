@@ -10,6 +10,13 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 ### Mantenimiento
 - Migración del paquete `google.generativeai` a `google.genai` para resolver advertencias de deprecación (FutureWarning) y asegurar compatibilidad futura.
 
+### Añadido
+- Nuevo argumento CLI `--analyze` para auto-descubrimiento de configuración y estructura del proyecto.
+
+### Cambiado
+- Reescritura integral del `README.md`: unificación de instrucciones de instalación, simplificación de guías de uso y eliminación de redundancias.
+- La guía de submódulos `GUIDE_SUBMODULES.md` ha sido archivada en `docs/legacy/` ya que el método recomendado de instalación es vía pip.
+
 ## [0.1.0] - 2026-01-30
 
 ### Añadido

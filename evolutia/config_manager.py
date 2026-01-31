@@ -189,6 +189,10 @@ class ConfigManager:
             
         logger.info(f"Configuración actualizada en {self.config_path}")
 
+    def update_config_from_structure(self):
+        """Alias para update_config, usado por compatibilidad."""
+        return self.update_config()
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Gestor de configuración automática de Evolutia')

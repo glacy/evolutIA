@@ -60,8 +60,14 @@ Ejemplos:
     parser.add_argument('--list', action='store_true', help='Listar ejercicios')
     parser.add_argument('--query', type=str, help='Consulta RAG')
     parser.add_argument('--workers', type=int, default=5, help='Número de hilos para generación paralela')
+    parser.add_argument('--analyze', action='store_true', help='Analizar estructura y generar config.yaml')
 
     args = parser.parse_args()
+    
+    if args.analyze:
+        print("Analizando estructura del proyecto...")
+        ConfigManager(str(Path.cwd())).update_config_from_structure()
+        return 0
     
     # Validaciones básicas de argumentos
     if not args.reindex and not args.list and not args.query:
