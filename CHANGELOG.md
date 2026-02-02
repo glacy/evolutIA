@@ -17,6 +17,12 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 - Reescritura integral del `README.md`: unificación de instrucciones de instalación, simplificación de guías de uso y eliminación de redundancias.
 - La guía de submódulos `GUIDE_SUBMODULES.md` ha sido archivada en `docs/legacy/` ya que el método recomendado de instalación es vía pip.
 
+## [0.1.1]2026-01-31
+
+### Corregido
+- Solucionado error `AttributeError: 'VariationGenerator' object has no attribute 'generate_variation'`. Este método faltaba en la distribución 0.1.0 y causaba fallos en el modo de variación.
+- Añadido argumento CLI `--analyze` faltante en la distribución anterior.
+
 ## [0.1.0] - 2026-01-30
 
 ### Añadido

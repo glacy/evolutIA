@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="evolutia",
-    version="0.1.0",
+    version="0.1.1",
     author="Gerardo Lacy-Mora",
     author_email="gerardolacymora@gmail.com",
     description="Sistema automatizado para generar preguntas de examen desafiantes basadas en materiales didácticos existentes",
@@ -30,6 +30,13 @@ setup(
         "google-generativeai",
         "tqdm",
     ],
+    extras_require={
+        "rag": [
+            "chromadb",
+            "tiktoken",
+            "sentence-transformers",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "evolutia=evolutia_cli:main",

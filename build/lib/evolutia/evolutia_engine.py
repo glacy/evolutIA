@@ -20,9 +20,9 @@ from .config_manager import ConfigManager
 
 # Conditional RAG imports
 try:
-    from .rag.rag_manager import RAGManager
-    from .rag.enhanced_variation_generator import EnhancedVariationGenerator
-    from .rag.consistency_validator import ConsistencyValidator
+    from rag.rag_manager import RAGManager
+    from rag.enhanced_variation_generator import EnhancedVariationGenerator
+    from rag.consistency_validator import ConsistencyValidator
     RAG_AVAILABLE = True
 except ImportError:
     RAG_AVAILABLE = False

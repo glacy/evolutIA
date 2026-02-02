@@ -1,0 +1,12 @@
+PyYAML
+requests
+python-dotenv
+openai
+anthropic
+google-generativeai
+tqdm
+
+[rag]
+chromadb
+tiktoken
+sentence-transformers

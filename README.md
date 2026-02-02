@@ -61,7 +61,7 @@ Toma ejercicios existentes de un tema y crea versiones más complejas.
 
 ```bash
 # Generar 3 variaciones del tema 'analisis_vectorial'
-evolutia --tema analisis_vectorial --num_ejercicios 3 --output examenes/parcial1
+evolutia --tema analisis_vectorial --num_ejercicios 1 --output examenes/parcial1
 ```
 
 O variar ejercicios específicos por su etiqueta (Label):
