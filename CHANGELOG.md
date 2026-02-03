@@ -13,6 +13,26 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
   - Agregado límite de memoria configurable (default: 500MB) con tracking de uso por entrada
   - Implementado eviction automático basado en RAM cuando se excede el límite
   - Estadísticas expandidas: `memory_mb`, `memory_limit_mb`, `memory_usage_percent`
+- **MaterialExtractor**: Implementado caché de rutas de archivos válidos
+  - Almacena metadatos de archivos procesados para evitar escaneos repetidos del filesystem
+  - TTL de 5 minutos para invalidar caché automáticamente
+  - Verificación de modificación de archivos usando timestamps
+  - Método `clear_cache()` para limpiar manualmente el caché
+  - Método `get_cache_stats()` para obtener estadísticas del caché
+- **RAGIndexer/RAGRetriever**: Implementado lazy loading de modelos de embeddings
+  - Modelos de embeddings solo se cargan cuando se necesitan (no en __init__)
+  - Reduce el tiempo de inicialización y el uso de memoria cuando RAG no se usa
+  - Método `_ensure_embeddings_initialized()` para inicialización bajo demanda
+- **ChromaDB queries**: Agregado límite de paginación para evitar cargar colecciones completas
+  - Parámetro `max_results_limit` en configuración de retrieval (default: 100)
+  - Limita el número máximo de resultados en queries de ChromaDB
+  - Aplicado a `retrieve_similar_exercises()` y `hybrid_search()`
+- **Proveedores asíncronos**: Agregado manejo de errores con retry automático
+  - Decorador `@retry_async` con backoff exponencial (1s → 10s)
+  - Máximo 3 reintentos por defecto, configurable
+  - Logging de cada intento fallido con información del error
+  - Clase `CircuitBreaker` para evitar llamadas a servicios fallidos
+  - Decorador `@with_circuit_breaker` para proteger funciones
 - **Eliminado directorio build/ del control de versiones**:
   - Agregado `build/` a `.gitignore`
   - Eliminadas ~12k líneas duplicadas del repositorio
@@ -27,6 +47,13 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
   - Uso de `asyncio.Semaphore` para limitar concurrencia
   - Más eficiente que `ThreadPoolExecutor` para operaciones I/O-bound
   - Mantenida compatibilidad con versión síncrona existente
+
+### Añadido
+- **Nuevo módulo**: `evolutia/retry_utils.py`
+  - Decoradores `@retry_async` y `@retry_sync` para reintentos automáticos
+  - Clase `CircuitBreaker` para implementar patrón Circuit Breaker
+  - Backoff exponencial configurable
+  - Callbacks opcionales antes de cada reintento
 
 ### Mantenimiento
 - Migración del paquete `google.generativeai` a `google.genai` para resolver advertencias de deprecación (FutureWarning) y asegurar compatibilidad futura.

@@ -17,17 +17,18 @@ evolutia/
  ├── llm_providers.py         # Abstracción de proveedores LLM
  ├── async_llm_providers.py   # Proveedores asíncronos de LLM
  ├── imports.py               # Imports centralizados
+ ├── retry_utils.py           # Utilidades de retry y circuit breaker
  └── utils/
      ├── json_parser.py       # Parseo robusto de JSON
      ├── markdown_parser.py   # Parseo de Markdown/MyST
      └── math_extractor.py    # Extracción de matemáticas
  └── rag/                    # Sistema RAG
      ├── rag_manager.py       # Gestor RAG
-     ├── rag_indexer.py       # Indexación
-     ├── rag_retriever.py     # Recuperación
+     ├── rag_indexer.py       # Indexación (lazy loading de embeddings)
+     ├── rag_retriever.py     # Recuperación (lazy loading de embeddings, paginación)
      └── ...
  └── cache/                  # Sistema de caché
-     ├── llm_cache.py        # Caché de respuestas LLM
+     ├── llm_cache.py        # Caché de respuestas LLM (write-behind, límite RAM)
      └── exercise_cache.py   # Caché de análisis de ejercicios
  └── validation/             # Sistema de validación
      ├── args_validator.py   # Validación de argumentos CLI
@@ -661,5 +662,102 @@ if SentenceTransformer:
     # Usar sentence-transformers
     pass
 ```
-**Tests**: Todos los tests continúan pasando (20/20)
+
+## Optimizaciones Adicionales (v0.2.0)
+
+### MaterialExtractor: Caché de Rutas de Archivos Válidos
+
+**Objetivo**: Evitar escaneos repetidos del filesystem almacenando metadatos de archivos procesados.
+
+**Cambios**:
+- Agregado `_file_cache` para almacenar metadatos de archivos procesados
+- Agregado `_last_scan_timestamp` para tracking de escaneos
+- Agregado `_cache_ttl` (5 minutos) para invalidar caché automáticamente
+- Implementado `_is_cache_valid()` para verificar si el caché es vigente
+- Modificado `extract_from_file()` para usar caché con parámetro `use_cache`
+- Implementado `clear_cache()` para limpiar manualmente el caché
+- Implementado `get_cache_stats()` para obtener estadísticas del caché
+
+**Beneficios**:
+- **Menos I/O de disco**: Evita re-lectura de archivos que no cambiaron
+- **Faster startup**: Escaneos iniciales más rápidos en ejecuciones posteriores
+- **TTL automático**: Caché se invalida automáticamente después de 5 minutos
+- **Verificación de cambios**: Detecta archivos modificados usando timestamps
+
+### RAGIndexer/RAGRetriever: Lazy Loading de Embeddings
+
+**Objetivo**: No cargar modelos de embeddings hasta que sean necesarios.
+
+**Cambios**:
+- Implementado `_ensure_embeddings_initialized()` para inicialización bajo demanda
+- Removido `_setup_embeddings()` de `__init__()` para evitar carga inmediata
+- Modelos de embeddings solo se cargan cuando se llama a un método que los necesita
+- Reducción del tiempo de inicialización y uso de memoria
+
+**Beneficios**:
+- **Inicio más rápido**: Inicialización inmediata sin cargar modelos pesados
+- **Menor uso de memoria**: Modelos solo se cargan si se usa RAG
+- **Bajo demanda**: Carga solo cuando realmente se necesita embeddings
+
+### ChromaDB: Límite de Paginación para Queries
+
+**Objetivo**: Evitar cargar colecciones completas en memoria con límite de resultados.
+
+**Cambios**:
+- Agregado parámetro `max_results_limit` en configuración de retrieval (default: 100)
+- Limitado número de resultados en `retrieve_similar_exercises()` y `hybrid_search()`
+- Cálculo de `n_results` como `min(top_k, max_results_limit)` para evitar queries grandes
+
+**Beneficios**:
+- **Menor uso de memoria**: No carga colecciones completas en RAM
+- **Queries más rápidos**: Menos datos transferidos desde ChromaDB
+- **Predecible**: Comportamiento consistente independientemente del tamaño de la colección
+
+### Manejo de Errores: Retry Automático con Backoff Exponencial
+
+**Objetivo**: Mejorar resiliencia de llamadas a APIs externas con reintentos automáticos.
+
+**Módulo**: `evolutia/retry_utils.py` (nuevo)
+
+**Decoradores**:
+
+1. **`@retry_async`**: Para funciones asíncronas
+   - Backoff exponencial configurable (1s → 10s)
+   - Número máximo de reintentos (default: 3)
+   - Logging de cada intento fallido
+   - Callback opcional antes de cada reintento
+
+2. **`@retry_sync`**: Para funciones síncronas
+   - Mismas características que `@retry_async` pero para código síncrono
+
+3. **`@with_circuit_breaker`**: Para evitar llamadas a servicios fallidos
+   - Estados: CLOSED (normal), OPEN (fallo), HALF_OPEN (recuperando)
+   - Umbral de fallos configurable (default: 5)
+   - Timeout para recuperar (default: 60s)
+
+**Beneficios**:
+- **Más resiliencia**: Reintenta automáticamente ante fallos transitorios
+- **Mejor experiencia de usuario**: Errores temporales no causan fallos inmediatos
+- **Protección de servicios**: Circuit Breaker evita saturar servicios fallidos
+- **Logging detallado**: Cada intento se loguea para debugging
+
+**Integración**:
+- Aplicado a todos los métodos `generate_content()` de proveedores async
+- Configurable por proveedor y tipo de operación
+- Compatibilidad con `CircuitBreaker` para protección adicional
+
+## Mejoras Futuras Planeadas
+
+- [x] Estandarización completa de type hints
+- [x] Implementación de caché para respuestas de LLM con optimizaciones de memoria y I/O
+- [x] Implementación de proveedores asíncronos de LLM
+- [x] Centralización de imports de dependencias opcionales
+- [x] Optimización de MaterialExtractor con caché de archivos
+- [x] Lazy loading de modelos de embeddings en RAG
+- [x] Límite de paginación para queries ChromaDB
+- [x] Manejo de errores con retry automático
+- [ ] Mejora de logging con contexto estructurado
+- [ ] Añadir tests unitarios para todos los proveedores LLM
+- [ ] Documentar métricas internas de rendimiento
+- [ ] Considerar implementación de streaming para respuestas largas
 

@@ -8,6 +8,8 @@ from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 from functools import wraps
 
+from .retry_utils import retry_async
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,24 +66,21 @@ class AsyncOpenAIProvider(AsyncLLMProvider):
         except Exception as e:
             logger.error(f"[AsyncOpenAIProvider] Error inicializando proveedor síncrono: {e}")
 
+    @retry_async(max_retries=3, initial_delay=1.0, max_delay=10.0)
     async def generate_content(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> Optional[str]:
         """Genera contenido usando el proveedor síncrono en un executor."""
         if not self.sync_provider:
             return None
 
-        try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                self.sync_provider.generate_content,
-                prompt,
-                system_prompt,
-                kwargs
-            )
-            return result
-        except Exception as e:
-            logger.error(f"[AsyncOpenAIProvider] Error generando contenido: {e}")
-            return None
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            self.sync_provider.generate_content,
+            prompt,
+            system_prompt,
+            kwargs
+        )
+        return result
 
 
 class AsyncAnthropicProvider(AsyncLLMProvider):
@@ -98,24 +97,21 @@ class AsyncAnthropicProvider(AsyncLLMProvider):
         except Exception as e:
             logger.error(f"[AsyncAnthropicProvider] Error inicializando proveedor síncrono: {e}")
 
+    @retry_async(max_retries=3, initial_delay=1.0, max_delay=10.0)
     async def generate_content(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> Optional[str]:
         """Genera contenido usando el proveedor síncrono en un executor."""
         if not self.sync_provider:
             return None
 
-        try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                self.sync_provider.generate_content,
-                prompt,
-                system_prompt,
-                kwargs
-            )
-            return result
-        except Exception as e:
-            logger.error(f"[AsyncAnthropicProvider] Error generando contenido: {e}")
-            return None
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            self.sync_provider.generate_content,
+            prompt,
+            system_prompt,
+            kwargs
+        )
+        return result
 
 
 class AsyncGeminiProvider(AsyncLLMProvider):
@@ -132,24 +128,21 @@ class AsyncGeminiProvider(AsyncLLMProvider):
         except Exception as e:
             logger.error(f"[AsyncGeminiProvider] Error inicializando proveedor síncrono: {e}")
 
+    @retry_async(max_retries=3, initial_delay=1.0, max_delay=10.0)
     async def generate_content(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> Optional[str]:
         """Genera contenido usando el proveedor síncrono en un executor."""
         if not self.sync_provider:
             return None
 
-        try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                self.sync_provider.generate_content,
-                prompt,
-                system_prompt,
-                kwargs
-            )
-            return result
-        except Exception as e:
-            logger.error(f"[AsyncGeminiProvider] Error generando contenido: {e}")
-            return None
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            self.sync_provider.generate_content,
+            prompt,
+            system_prompt,
+            kwargs
+        )
+        return result
 
 
 def get_async_provider(provider_name: str, **kwargs) -> AsyncLLMProvider:

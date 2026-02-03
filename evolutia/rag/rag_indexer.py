@@ -49,37 +49,50 @@ class RAGIndexer:
         self.base_path = Path(base_path)
         self.vector_store = None
         self.embedding_model = None
+        self.embedding_client = None
+        self.embedding_model_name = None
         self.embedding_provider = config.get('embeddings', {}).get('provider', 'openai')
         self.chroma_client = chroma_client
-        self._setup_embeddings()
+        self._embeddings_initialized = False
         self._setup_vector_store()
-    
-    def _setup_embeddings(self):
-        """Configura el modelo de embeddings."""
+
+    def _ensure_embeddings_initialized(self):
+        """
+        Inicializa el modelo de embeddings de forma lazy (solo cuando se necesita).
+        """
+        if self._embeddings_initialized:
+            return
+
         embeddings_config = self.config.get('embeddings', {})
         provider = embeddings_config.get('provider', 'openai')
         model_name = embeddings_config.get('model', 'text-embedding-3-small')
-        
+
         if provider == 'openai':
             if not OPENAI_AVAILABLE:
                 raise ImportError("openai no está instalado. Instala con: pip install openai")
-            
+
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 raise ValueError("OPENAI_API_KEY no encontrada en variables de entorno")
-            
+
             self.embedding_client = OpenAI(api_key=api_key)
             self.embedding_model_name = model_name
-            logger.info(f"Usando embeddings de OpenAI: {model_name}")
-        
+            logger.info(f"[RAGIndexer] Inicializados embeddings de OpenAI: {model_name}")
+
         elif provider == 'sentence-transformers':
             if not SENTENCE_TRANSFORMERS_AVAILABLE:
                 raise ImportError("sentence-transformers no está instalado. Instala con: pip install sentence-transformers")
-            
+
             self.embedding_model = SentenceTransformer(model_name)
-            logger.info(f"Usando embeddings locales: {model_name}")
+            logger.info(f"[RAGIndexer] Inicializados embeddings locales: {model_name}")
         else:
             raise ValueError(f"Proveedor de embeddings no soportado: {provider}")
+
+        self._embeddings_initialized = True
+
+    def _setup_embeddings(self):
+        """Configura el modelo de embeddings (mantenido para compatibilidad)."""
+        self._ensure_embeddings_initialized()
     
     def _setup_vector_store(self):
         """Configura el vector store."""
@@ -117,42 +130,46 @@ class RAGIndexer:
     def _generate_embedding(self, text: str) -> List[float]:
         """
         Genera embedding para un texto.
-        
+
         Args:
             text: Texto a convertir en embedding
-            
+
         Returns:
             Lista de floats representando el embedding
         """
+        self._ensure_embeddings_initialized()
+
         if self.embedding_provider == 'openai':
             response = self.embedding_client.embeddings.create(
                 model=self.embedding_model_name,
                 input=text
             )
             return response.data[0].embedding
-        
+
         elif self.embedding_provider == 'sentence-transformers':
             return self.embedding_model.encode(text, show_progress_bar=False).tolist()
     
     def _generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
         """
         Genera embeddings para múltiples textos en batch.
-        
+
         Args:
             texts: Lista de textos
-            
+
         Returns:
             Lista de embeddings
         """
+        self._ensure_embeddings_initialized()
+
         if self.embedding_provider == 'openai':
             batch_size = self.config.get('embeddings', {}).get('batch_size', 100)
             embeddings = []
-            
+
             # Filtrar textos vacíos para evitar error 400 de OpenAI
             valid_texts = [t for t in texts if t and t.strip()]
             if not valid_texts:
                 return []
-                
+
             for i in range(0, len(valid_texts), batch_size):
                 batch = valid_texts[i:i + batch_size]
                 try:
@@ -165,9 +182,9 @@ class RAGIndexer:
                     logger.error(f"Error en OpenAI embeddings: {e}")
                     logger.error(f"Batch problemático: {batch}")
                     raise
-            
+
             return embeddings
-        
+
         elif self.embedding_provider == 'sentence-transformers':
             return self.embedding_model.encode(texts, show_progress_bar=True, batch_size=32).tolist()
     

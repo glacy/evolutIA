@@ -48,16 +48,22 @@ class MaterialExtractor:
         # TTL del caché en segundos (5 minutos)
         self._cache_ttl = 300
     
-    def extract_from_file(self, file_path: Path) -> Dict:
+    def extract_from_file(self, file_path: Path, use_cache: bool = True) -> Dict:
         """
         Extrae ejercicios y soluciones de un archivo Markdown.
-        
+
         Args:
             file_path: Ruta al archivo
-            
+            use_cache: Si True, usa el caché si es válido (default: True)
+
         Returns:
             Diccionario con ejercicios y soluciones extraídos
         """
+        # Verificar caché primero
+        if use_cache and self._is_cache_valid(file_path):
+            logger.debug(f"[MaterialExtractor] Usando caché para {file_path.name}")
+            return self._file_cache[file_path]['data']
+
         try:
             content = read_markdown_file(file_path)
             frontmatter, content_body = extract_frontmatter(content)
@@ -105,14 +111,33 @@ class MaterialExtractor:
                 'solutions': solutions,
                 'content_body': content_body  # Exponer contenido para indexación de lecturas
             }
+
+            # Guardar en caché
+            if use_cache:
+                self._file_cache[file_path] = {
+                    'data': result,
+                    'timestamp': file_path.stat().st_mtime
+                }
+                self._last_scan_timestamp = max(self._last_scan_timestamp, file_path.stat().st_mtime)
+
+            return result
         except Exception as e:
             logger.error(f"[MaterialExtractor] Error extrayendo de {file_path}: {e}")
-            return {
+            error_result = {
                 'file_path': file_path,
                 'frontmatter': {},
                 'exercises': [],
                 'solutions': []
             }
+
+            # Guardar incluso errores en caché para evitar reintentos fallidos
+            if use_cache:
+                self._file_cache[file_path] = {
+                    'data': error_result,
+                    'timestamp': time.time()  # Usar tiempo actual para archivos que no existen
+                }
+
+            return error_result
 
     def extract_from_directory(self, directory: Path, pattern: str = "*.md") -> List[Dict]:
         """
@@ -273,5 +298,18 @@ class MaterialExtractor:
             return True
         except (OSError, KeyError):
             return False
+
+    def get_cache_stats(self) -> Dict:
+        """
+        Obtiene estadísticas del caché de archivos.
+
+        Returns:
+            Diccionario con estadísticas del caché
+        """
+        return {
+            'cached_files': len(self._file_cache),
+            'last_scan_timestamp': self._last_scan_timestamp,
+            'cache_ttl': self._cache_ttl
+        }
 
 

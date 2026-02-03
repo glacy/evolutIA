@@ -193,11 +193,26 @@ EvolutIA incluye varias optimizaciones para mejorar el rendimiento y reducir el 
 - Proveedores asíncronos de LLM (`AsyncOpenAIProvider`, `AsyncAnthropicProvider`, `AsyncGeminiProvider`).
 - Generación concurrente de variaciones usando `asyncio.gather()`.
 - Más eficiente que `ThreadPoolExecutor` para operaciones I/O-bound como llamadas a APIs de LLM.
+- **Retry automático**: Reintentos con backoff exponencial ante fallos temporales de API.
+
+### Optimizaciones de Escaneo de Archivos
+- **Caché de rutas válidas**: `MaterialExtractor` almacena metadatos de archivos procesados para evitar escaneos repetidos del filesystem.
+- **TTL automático**: Caché se invalida automáticamente después de 5 minutos.
+- **Verificación de cambios**: Detecta archivos modificados usando timestamps para actualizar el caché cuando sea necesario.
+
+### RAG Optimizado
+- **Lazy loading de embeddings**: Modelos de embeddings solo se cargan cuando se usan RAG, reduciendo el tiempo de inicialización.
+- **Límite de paginación**: Queries de ChromaDB tienen un límite configurable (default: 100) para evitar cargar colecciones completas en memoria.
 
 ### Imports Centralizados
 - Módulo `evolutia/imports.py` centraliza los imports de dependencias opcionales.
 - Reduce duplicación de código y mejora la mantenibilidad.
 - Proporciona mensajes de error claros cuando faltan dependencias.
+
+### Manejo de Errores Robusto
+- **Retry automático**: Decoradores `@retry_async` y `@retry_sync` con backoff exponencial.
+- **Circuit Breaker**: Evita llamar servicios que están fallando continuamente.
+- **Logging contextual**: Cada intento fallido se loguea con información detallada para debugging.
 
 ---
 

@@ -48,31 +48,44 @@ class RAGRetriever:
         self.base_path = Path(base_path)
         self.embedding_provider = config.get('embeddings', {}).get('provider', 'openai')
         self.chroma_client = chroma_client
-        self._setup_embeddings()
+        self._embeddings_initialized = False
         self._setup_vector_store()
-    
-    def _setup_embeddings(self):
-        """Configura el modelo de embeddings (debe coincidir con el indexer)."""
+
+    def _ensure_embeddings_initialized(self):
+        """
+        Inicializa el modelo de embeddings de forma lazy (solo cuando se necesita).
+        """
+        if self._embeddings_initialized:
+            return
+
         embeddings_config = self.config.get('embeddings', {})
         provider = embeddings_config.get('provider', 'openai')
         model_name = embeddings_config.get('model', 'text-embedding-3-small')
-        
+
         if provider == 'openai':
             if not OPENAI_AVAILABLE:
                 raise ImportError("openai no está instalado")
-            
+
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 raise ValueError("OPENAI_API_KEY no encontrada")
-            
+
             self.embedding_client = OpenAI(api_key=api_key)
             self.embedding_model_name = model_name
-        
+            logger.info(f"[RAGRetriever] Inicializados embeddings de OpenAI: {model_name}")
+
         elif provider == 'sentence-transformers':
             if not SENTENCE_TRANSFORMERS_AVAILABLE:
                 raise ImportError("sentence-transformers no está instalado")
-            
+
             self.embedding_model = SentenceTransformer(model_name)
+            logger.info(f"[RAGRetriever] Inicializados embeddings locales: {model_name}")
+
+        self._embeddings_initialized = True
+
+    def _setup_embeddings(self):
+        """Configura el modelo de embeddings (mantenido para compatibilidad)."""
+        self._ensure_embeddings_initialized()
     
     def _setup_vector_store(self):
         """Configura la conexión al vector store."""
@@ -123,30 +136,33 @@ class RAGRetriever:
                                    max_complexity: Optional[float] = None) -> List[Dict]:
         """
         Recupera ejercicios similares al contenido dado.
-        
+
         Args:
             exercise_content: Contenido del ejercicio de referencia
             top_k: Número de resultados a recuperar
             exclude_label: Label del ejercicio a excluir (el original)
             min_complexity: Complejidad mínima
             max_complexity: Complejidad máxima
-            
+
         Returns:
             Lista de ejercicios similares con sus metadatos
         """
+        self._ensure_embeddings_initialized()
+
         retrieval_config = self.config.get('retrieval', {})
         top_k = retrieval_config.get('top_k', top_k)
         similarity_threshold = retrieval_config.get('similarity_threshold', 0.7)
-        
+        max_results_limit = retrieval_config.get('max_results_limit', 100)  # Límite absoluto
+
         # Generar embedding del query
         query_embedding = self._generate_query_embedding(exercise_content)
-        
+
         # Construir filtros de metadatos usando sintaxis correcta de ChromaDB
         conditions = [{'type': 'exercise'}]
-        
+
         if exclude_label:
             conditions.append({'label': {'$ne': exclude_label}})
-        
+
         if min_complexity is not None and max_complexity is not None:
             conditions.append({'complexity': {'$gte': float(min_complexity)}})
             conditions.append({'complexity': {'$lte': float(max_complexity)}})
@@ -154,7 +170,7 @@ class RAGRetriever:
             conditions.append({'complexity': {'$gte': float(min_complexity)}})
         elif max_complexity is not None:
             conditions.append({'complexity': {'$lte': float(max_complexity)}})
-        
+
         # Si hay múltiples condiciones, usar $and
         if len(conditions) > 1:
             where = {'$and': conditions}
@@ -162,11 +178,14 @@ class RAGRetriever:
             where = conditions[0]
         else:
             where = None
-        
+
+        # Calcular número de resultados a buscar con límite absoluto
+        n_results = min(top_k * 2, max_results_limit)
+
         # Buscar en el vector store
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k * 2,  # Buscar más para filtrar después
+            n_results=n_results,  # Buscar más para filtrar después, pero con límite
             where=where
         )
         
@@ -327,22 +346,30 @@ class RAGRetriever:
                      top_k: int = 5) -> List[Dict]:
         """
         Búsqueda híbrida: semántica + filtros de metadatos.
-        
+
         Args:
             query: Consulta de texto
             metadata_filters: Filtros de metadatos (ej: {'type': 'exercise'})
             top_k: Número de resultados
-            
+
         Returns:
             Lista de resultados
         """
+        self._ensure_embeddings_initialized()
+
+        retrieval_config = self.config.get('retrieval', {})
+        max_results_limit = retrieval_config.get('max_results_limit', 100)  # Límite absoluto
+
         query_embedding = self._generate_query_embedding(query)
-        
+
         where = metadata_filters or {}
-        
+
+        # Calcular número de resultados con límite absoluto
+        n_results = min(top_k, max_results_limit)
+
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k,
+            n_results=n_results,
             where=where if where else None
         )
         

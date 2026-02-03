@@ -90,6 +90,11 @@ def validate_config(self, config: Dict) -> Tuple[bool, List[str]]:
 `LLMCache`, `ExerciseAnalysisCache` - Caché de respuestas LLM y análisis de ejercicios
 - Features: write-behind con debounce, límite de memoria RAM, TTL, LRU eviction
 
+### Retry (`evolutia/`)
+`retry_utils` - Utilidades para manejo de errores y reintentos
+- Decoradores `@retry_async` y `@retry_sync` con backoff exponencial
+- Clase `CircuitBreaker` para evitar llamadas a servicios fallidos
+
 ### Imports Centralizados (`evolutia/`)
 `OptionalImports` - Gestor de imports condicionales para dependencias opcionales
 - Centraliza imports de ChromaDB, sentence-transformers, OpenAI, Anthropic, Gemini
@@ -99,6 +104,7 @@ def validate_config(self, config: Dict) -> Tuple[bool, List[str]]:
 `AsyncLLMProvider`, `AsyncOpenAIProvider`, `AsyncAnthropicProvider`, `AsyncGeminiProvider` - Proveedores asíncronos para llamadas LLM
 - Más eficiente que ThreadPoolExecutor para operaciones I/O-bound
 - Compatible con versión síncrona existente
+- Incluye retry automático con backoff exponencial
 
 ## Git Workflow
 
