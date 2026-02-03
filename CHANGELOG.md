@@ -7,8 +7,68 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ## [Unreleased]
 
+### Optimizado
+- **Caché LLM**: Implementado write-behind con debounce (5 segundos) para persistencia a disco
+  - Reduce dramáticamente el I/O de disco (antes: cada put(), ahora: solo después de inactividad)
+  - Agregado límite de memoria configurable (default: 500MB) con tracking de uso por entrada
+  - Implementado eviction automático basado en RAM cuando se excede el límite
+  - Estadísticas expandidas: `memory_mb`, `memory_limit_mb`, `memory_usage_percent`
+- **Eliminado directorio build/ del control de versiones**:
+  - Agregado `build/` a `.gitignore`
+  - Eliminadas ~12k líneas duplicadas del repositorio
+  - Reducción del tamaño del repositorio
+- **Imports centralizados**: Nuevo módulo `evolutia/imports.py`
+  - Clase `OptionalImports` para gestionar imports de dependencias opcionales
+  - Centralizados imports de ChromaDB, sentence-transformers, OpenAI, Anthropic, Gemini
+  - Reducción de duplicación de código try/except por todo el proyecto
+- **Soporte asíncrono para llamadas LLM**: Nuevo módulo `evolutia/async_llm_providers.py`
+  - Wrappers asíncronos para proveedores LLM (`AsyncOpenAIProvider`, `AsyncAnthropicProvider`, `AsyncGeminiProvider`)
+  - Nuevo método `generate_variations_async()` en `EvolutiaEngine` usando `asyncio.gather()`
+  - Uso de `asyncio.Semaphore` para limitar concurrencia
+  - Más eficiente que `ThreadPoolExecutor` para operaciones I/O-bound
+  - Mantenida compatibilidad con versión síncrona existente
+
 ### Mantenimiento
 - Migración del paquete `google.generativeai` a `google.genai` para resolver advertencias de deprecación (FutureWarning) y asegurar compatibilidad futura.
+- Refactorización de `evolutia/llm_providers.py` para eliminar duplicación de código:
+  - Nueva clase base `OpenAICompatibleProvider` con lógica compartida para proveedores compatibles con OpenAI API
+  - Reducción de 54 líneas de código (16%) en el módulo de proveedores
+  - Mejora de mantenibilidad al centralizar la lógica de configuración de cliente y generación de contenido
+  - Proveedores refactorizados: `OpenAIProvider`, `LocalProvider`, `DeepSeekProvider`, `GenericProvider`
+- Estandarización de type hints en módulos principales:
+  - `evolutia_engine.py`: Mejora de tipos en métodos como `_generate_single_variation()`, `_generate_creation_mode()`, `generate_variations_parallel()`, `generate_exam_files()`
+  - `complexity_validator.py`: Mejora de tipos en `validate_batch()` (antes `list` genérico, ahora `List[Tuple[Dict, Dict, Dict]]`)
+  - `config_manager.py`: Mejora de tipos en `__init__()` (acepta ahora `Union[Path, str]`)
+  - `variation_generator.py`: Mejora de tipos en `generate_variation()`, `generate_new_exercise_from_topic()`, `_create_quiz_prompt()`
+  - `material_extractor.py`: Mejora de tipos en `__init__()` (acepta ahora `Union[Path, str]`)
+  - `exam_generator.py`: Mejora de tipos en `__init__()`, `generate_exam_frontmatter()` (usa `Optional[List[str]]`)
+  - `exercise_analyzer.py`: Mejora de tipos en `analyze()` (ahora `Dict[str, Optional[str | int | float | List[str]]`)
+  - `llm_providers.py`: Añadido `Union` a imports para mejor flexibilidad de tipos
+- Unificación de política de manejo de errores:
+  - Nueva jerarquía de excepciones personalizadas (`EvolutiaError`, `ConfigurationError`, `ProviderError`, `ValidationError`, `MaterialExtractionError`, `ExamGenerationError`, `RAGError`)
+  - Mejora de mensajes de logging con contexto consistente (nombre del componente, información relevante)
+  - Aplicación de políticas de fail-fast vs graceful degradation de manera consistente
+  - Mejor documentación de retorno de métodos (docstrings actualizados)
+  - Logging mejorado con prefijos de componente para facilitar diagnóstico
+  - Archivos mejorados: `llm_providers.py`, `variation_generator.py`, `evolutia_engine.py`, `material_extractor.py`, `complexity_validator.py`, `exam_generator.py`
+   - Nueva documentación: `docs/ERROR_HANDLING.md` con política completa y ejemplos
+- Implementación de validación exhaustiva de inputs:
+  - Nuevo módulo `evolutia/validation/args_validator.py` con 19 métodos de validación para argumentos CLI
+  - Nuevo módulo `evolutia/validation/config_validator.py` con 25 métodos de validación para configuración
+  - Validación automática de argumentos CLI antes de ejecutar el engine
+  - Validación automática de configuración al cargar `evolutia_config.yaml`
+  - Validaciones de rutas, tipos numéricos, valores de enum, rangos válidos, combinaciones de argumentos
+  - Sistema de errores (bloqueantes) y warnings (no bloqueantes pero informativos)
+   - Nueva documentación: `docs/VALIDATION.md` con guía completa de validación
+   - 40 tests nuevos para los validadores (19 para ArgsValidator, 21 para ConfigValidator)
+- Implementación de caché de LLM para ahorro de costos:
+  - Integrado `LLMCache` en todos los proveedores LLM
+  - Añadido parámetro `cache` opcional a `LLMProvider`, `OpenAICompatibleProvider`, `AnthropicProvider`, `GeminiProvider`, `LocalProvider`, `DeepSeekProvider`, `GenericProvider`
+  - Implementado lógica de get/put caché en `_openai_generate_content()`, `AnthropicProvider.generate_content()`, `GeminiProvider.generate_content()`
+  - Filtrado de respuestas vacías, de error y muy cortas
+  - TTL configurable y LRU eviction para expiración automática
+  - Metadata de caché (provider, model, temperature, max_tokens)
+  - 13 tests nuevos para `LLMCache` y `ExerciseAnalysisCache`
 
 ### Añadido
 - Nuevo argumento CLI `--analyze` para auto-descubrimiento de configuración y estructura del proyecto.

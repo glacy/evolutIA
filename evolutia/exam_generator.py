@@ -4,7 +4,7 @@ Crea la estructura completa de archivos para un examen.
 """
 import yaml
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 import logging
 
@@ -13,18 +13,18 @@ logger = logging.getLogger(__name__)
 
 class ExamGenerator:
     """Genera archivos de examen en formato MyST/Markdown."""
-    
-    def __init__(self, base_path: Path):
+
+    def __init__(self, base_path: Union[Path, str]):
         """
         Inicializa el generador.
-        
+
         Args:
             base_path: Ruta base del proyecto
         """
         self.base_path = Path(base_path)
-    
+
     def generate_exam_frontmatter(self, exam_number: int, subject: str = "IF3602 - II semestre 2025",
-                                  tags: List[str] = None) -> str:
+                                  tags: Optional[List[str]] = None) -> str:
         """
         Genera el frontmatter YAML para un examen.
         
@@ -268,16 +268,17 @@ class ExamGenerator:
                         f.write(self.generate_solution_file(
                             solution_content, i, exam_number, current_metadata
                         ))
-                    logger.info(f"Solución creada: {solution_file}")
+                    logger.info(f"[ExamGenerator] Solución creada: {solution_file}")
                 else:
-                    logger.warning(f"No hay solución para ejercicio {i}")
-            
+                    logger.warning(f"[ExamGenerator] No hay solución para ejercicio {i}")
+
             # Actualizar downloads en frontmatter
             self._update_downloads_in_frontmatter(exam_file, exam_number, len(variations))
-            
+
+            logger.info(f"[ExamGenerator] Examen generado exitosamente en {output_dir}")
             return True
         except Exception as e:
-            logger.error(f"Error generando examen: {e}")
+            logger.error(f"[ExamGenerator] Error generando examen (output_dir={output_dir}, exam_number={exam_number}): {e}")
             return False
     
     def _update_downloads_in_frontmatter(self, exam_file: Path, exam_number: int,
@@ -324,5 +325,5 @@ class ExamGenerator:
             
             exam_file.write_text(new_content, encoding='utf-8')
         except Exception as e:
-            logger.warning(f"No se pudo actualizar downloads: {e}")
+            logger.warning(f"[ExamGenerator] No se pudo actualizar downloads en {exam_file}: {e}")
 

@@ -2,7 +2,10 @@
 Utilidades para extraer y analizar expresiones matemáticas de archivos Markdown.
 """
 import re
-from typing import List, Dict, Set
+import logging
+from typing import List, Dict, Set, Tuple
+
+logger = logging.getLogger(__name__)
 
 # Patrones comunes para variables
 # Variables latinas: \vec{A}, A, \mathbf{B}, etc.
@@ -27,6 +30,9 @@ def extract_math_expressions(content: str) -> List[str]:
     Returns:
         Lista de expresiones matemáticas encontradas
     """
+    if not content:
+        return []
+
     expressions = []
 
     # 1. Bloques math de MyST: :::{math} ... :::
@@ -53,6 +59,7 @@ def extract_math_expressions(content: str) -> List[str]:
         if expr:
             expressions.append(expr.strip())
 
+    logger.debug(f"[MathExtractor] Extraídas {len(expressions)} expresiones matemáticas del contenido")
     return expressions
 
 
@@ -81,6 +88,7 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
         for match in GREEK_PATTERN.finditer(expr):
             variables.add(match.group(1))
 
+    logger.debug(f"[MathExtractor] Extraídas {len(variables)} variables de {len(math_expressions)} expresiones")
     return variables
 
 
@@ -141,4 +149,5 @@ def estimate_complexity(expressions: List[str]) -> float:
         if '\\begin{align' in expr or '\\begin{aligned' in expr:
             total_complexity += 2.0
 
+    logger.debug(f"[MathExtractor] Complejidad estimada: {total_complexity:.2f} (de {len(expressions)} expresiones)")
     return total_complexity

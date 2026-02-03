@@ -3,7 +3,7 @@ Validador de complejidad.
 Verifica que las variaciones generadas sean más complejas que los originales.
 """
 import logging
-from typing import Dict
+from typing import Dict, List, Tuple
 
 from .exercise_analyzer import ExerciseAnalyzer
 from .utils.math_extractor import extract_math_expressions, estimate_complexity
@@ -154,26 +154,28 @@ class ComplexityValidator:
             )
         }
     
-    def validate_batch(self, exercises_and_variations: list) -> list:
+    def validate_batch(self, exercises_and_variations: List[Tuple[Dict, Dict, Dict]]) -> List[Dict]:
         """
         Valida un lote de variaciones.
-        
+
         Args:
             exercises_and_variations: Lista de tuplas (ejercicio_original, análisis_original, variación)
-        
+
         Returns:
             Lista de resultados de validación
         """
         results = []
-        
-        for original_exercise, original_analysis, variation in exercises_and_variations:
+
+        for i, (original_exercise, original_analysis, variation) in enumerate(exercises_and_variations, 1):
             result = self.validate(original_exercise, original_analysis, variation)
             results.append(result)
-            
+
+            label = variation.get('label') or f"variación_{i}"
             if result['is_valid']:
-                logger.info(f"Variación válida: {len(result['improvements'])} mejoras detectadas")
+                logger.info(f"[ComplexityValidator] Variación válida '{label}': {len(result['improvements'])} mejoras detectadas")
             else:
-                logger.warning(f"Variación inválida: {result.get('reason', 'Complejidad insuficiente')}")
-        
+                logger.warning(f"[ComplexityValidator] Variación inválida '{label}': {result.get('reason', 'Complejidad insuficiente')}")
+
+        logger.info(f"[ComplexityValidator] Validación de lote completada: {len(results)} variaciones procesadas")
         return results
 

@@ -3,8 +3,14 @@ Analizador de complejidad de ejercicios.
 Identifica tipo, pasos, conceptos y variables de ejercicios.
 """
 import re
-from typing import Dict, List, Set
+import logging
+from typing import Dict, List, Set, Optional, TYPE_CHECKING
 from collections import Counter
+
+if TYPE_CHECKING:
+    from evolutia.cache.exercise_cache import ExerciseAnalysisCache
+
+logger = logging.getLogger(__name__)
 
 try:
     from utils.math_extractor import (
@@ -25,70 +31,16 @@ except ImportError:
 class ExerciseAnalyzer:
     """Analiza la complejidad y estructura de ejercicios."""
 
-    # Palabras clave para identificación de tipo
-    DEMOSTRACION_KEYWORDS = [
-        'demuestre', 'demuestre que', 'pruebe', 'verifique', 'muestre que'
-    ]
+    def __init__(self, cache: Optional['ExerciseAnalysisCache'] = None):
+        """
+        Inicializa el analizador.
 
-    CALCULO_KEYWORDS = [
-        'calcule', 'calcular', 'encuentre', 'determine', 'evalúe', 'evaluar'
-    ]
-
-    APLICACION_KEYWORDS = [
-        'considere', 'suponga', 'modelo', 'sistema físico', 'aplicación',
-        'dispositivo', 'campo', 'potencial'
-    ]
-
-    STEP_KEYWORDS = [
-        'primero', 'luego', 'finalmente', 'ahora', 'a continuación',
-        'por tanto', 'por lo tanto', 'en consecuencia', 'así',
-        'por otro lado', 'además', 'también'
-    ]
-
-    # Patrones compilados para búsqueda eficiente
-    TYPE_PATTERNS = {
-        'demostracion': re.compile('|'.join(map(re.escape, DEMOSTRACION_KEYWORDS)), re.IGNORECASE),
-        'calculo': re.compile('|'.join(map(re.escape, CALCULO_KEYWORDS)), re.IGNORECASE),
-        'aplicacion': re.compile('|'.join(map(re.escape, APLICACION_KEYWORDS)), re.IGNORECASE)
-    }
-
-    STEP_KEYWORDS_PATTERN = re.compile('|'.join(map(re.escape, STEP_KEYWORDS)), re.IGNORECASE)
-
-    # Conceptos matemáticos comunes
-    CONCEPT_PATTERNS = {
-        'vector_operations': [
-            r'\\vec', r'\\cdot', r'\\times', r'\\nabla',
-            r'producto\s+(escalar|vectorial)', r'gradiente', r'divergencia', r'rotacional'
-        ],
-        'coordinate_systems': [
-            r'coordenadas?\s+(cartesianas?|polares?|cilíndricas?|esféricas?|toroidales?)',
-            r'\\rho', r'\\theta', r'\\phi', r'\\hat\{e\}_'
-        ],
-        'integrals': [
-            r'\\int', r'\\oint', r'integral', r'teorema\s+(de\s+)?(Green|Stokes|Gauss)',
-            r'divergencia', r'rotacional'
-        ],
-        'differential_equations': [
-            r'\\frac\{d', r'\\partial', r'ecuaci[óo]n\s+diferencial',
-            r'EDP', r'EDO'
-        ],
-        'linear_algebra': [
-            r'\\begin\{matrix\}', r'\\begin\{pmatrix\}', r'\\begin\{bmatrix\}',
-            r'matriz', r'\\mathbf', r'autovalor', r'autovector'
-        ],
-        'complex_numbers': [
-            r'\\mathbb\{C\}', r'z\s*=', r'n[úu]mero\s+complejo',
-            r'\\Re', r'\\Im', r'\\arg'
-        ],
-        'series_expansions': [
-            r'\\sum', r'serie', r'expansi[óo]n', r'Fourier',
-            r'Taylor', r'\\sum_\{n=0\}'
-        ]
-    }
-
-    def __init__(self):
-        """Inicializa el analizador."""
+        Args:
+            cache: Instancia opcional de ExerciseAnalysisCache para cachear análisis
+        """
         pass
+
+        self.cache = cache
 
     def identify_exercise_type(self, content: str) -> str:
         """
@@ -183,7 +135,7 @@ class ExerciseAnalyzer:
 
         return concepts
 
-    def analyze(self, exercise: Dict) -> Dict:
+    def analyze(self, exercise: Dict[str, Optional[str]]) -> Dict[str, Optional[str | int | float | List[str]]]:
         """
         Analiza un ejercicio completo y retorna metadatos de complejidad.
 
@@ -197,6 +149,17 @@ class ExerciseAnalyzer:
         """
         content = exercise.get('content', '')
         solution = exercise.get('solution', '')
+
+        # Intentar caché primero
+        if self.cache:
+            cached_analysis = self.cache.get(exercise)
+            if cached_analysis:
+                logger.info(f"[ExerciseAnalyzer] Análisis obtenido del caché para exercise={exercise.get('label', 'unknown')}")
+                return cached_analysis['analysis']
+
+        # Análisis normal (cache miss)
+        if not content:
+            return {}
 
         # Extraer expresiones matemáticas
         math_expressions = extract_math_expressions(content)

@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from evolutia.evolutia_engine import EvolutiaEngine
 from evolutia.config_manager import ConfigManager
+from evolutia.validation.args_validator import ArgsValidator, ValidationError
 
 # Configurar logging
 logging.basicConfig(
@@ -44,9 +45,11 @@ Ejemplos:
     parser.add_argument('--num_ejercicios', type=int, default=1, help='Número de ejercicios a generar')
     parser.add_argument('--output', type=str, help='Directorio de salida')
     parser.add_argument('--complejidad', type=str, choices=['media', 'alta', 'muy_alta'], default='alta', help='Nivel de complejidad')
-    parser.add_argument('--api', type=str, choices=['openai', 'anthropic', 'local', 'gemini'], help='Proveedor de API')
+    parser.add_argument('--api', type=str, choices=['openai', 'anthropic', 'local', 'gemini', 'deepseek', 'generic'], help='Proveedor de API')
     parser.add_argument('--base_path', type=str, default='.', help='Ruta base del proyecto')
     parser.add_argument('--config', type=str, help='Ruta al archivo de configuración')
+    parser.add_argument('--model', type=str, help='Nombre del modelo a usar (útil para generic/local)')
+    parser.add_argument('--base_url', type=str, help='URL base (útil para generic/local)')
     parser.add_argument('--examen_num', type=int, help='Número del examen')
     parser.add_argument('--no_generar_soluciones', action='store_true', help='NO generar soluciones')
     parser.add_argument('--subject', type=str, default='IF3602 - II semestre 2025', help='Asignatura')
@@ -63,7 +66,17 @@ Ejemplos:
     parser.add_argument('--analyze', action='store_true', help='Analizar estructura y generar config.yaml')
 
     args = parser.parse_args()
-    
+
+    # Validar argumentos con ArgsValidator
+    validator = ArgsValidator()
+    is_valid, errors = validator.validate_args(args)
+
+    if not is_valid:
+        logger.error("Errores de validación en argumentos:")
+        for error in errors:
+            logger.error(f"  - {error}")
+        parser.error("\n".join(errors))
+
     if args.analyze:
         print("Analizando estructura del proyecto...")
         ConfigManager(str(Path.cwd())).update_config_from_structure()

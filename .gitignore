@@ -17,6 +17,7 @@ ENV/
 # EvolutIA specific
 storage/
 logs/
+build/
 
 # MacOS
 .DS_Store

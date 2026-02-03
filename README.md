@@ -8,7 +8,7 @@ Sistema automatizado para generar preguntas de examen desafiantes basadas en mat
     - **Variación**: Incrementa la complejidad de ejercicios existentes.
     - **Creación**: Genera ejercicios nuevos desde cero basados en temas y tags.
 - **RAG (Retrieval-Augmented Generation)**: Usa tus propios apuntes y ejercicios previos como contexto para generar contenido más alineado al curso.
-- **Multi-Proveedor**: Soporte nativo para OpenAI (GPT-4), Anthropic (Claude 3), Google (Gemini 1.5) y Modelos Locales (via Ollama/LM Studio).
+- **Multi-Proveedor**: Soporte nativo para OpenAI (GPT-4), Anthropic (Claude 3), Google (Gemini 1.5), DeepSeek y Modelos Locales/Genéricos (via Ollama/OpenAI compat).
 - **Análisis de Complejidad**: Valida automáticamente que las nuevas preguntas sean matemáticamente más exigentes.
 - **Formato MyST**: Salida compatible con Curvenote y Jupyter Book.
 
@@ -48,6 +48,10 @@ Crea un archivo `.env` en la raíz de tu proyecto con tus credenciales:
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=...
+DEEPSEEK_API_KEY=sk-...
+GENERIC_API_KEY=... # Opcional si usas Provider Genérico
+GENERIC_BASE_URL=... # Opcional
+
 ```
 
 ---
@@ -118,16 +122,31 @@ python evolutia/config_manager.py
 | `--output` | Carpeta de salida | **Requerido** |
 | `--num_ejercicios` | Cantidad a generar | 1 |
 | `--complejidad` | Nivel objetivo (`media`, `alta`, `muy_alta`) | `alta` |
-| `--api` | Proveedor (`openai`, `anthropic`, `gemini`, `local`) | `openai` |
+| `--api` | Proveedor (`openai`, `anthropic`, `gemini`, `deepseek`, `generic`, `local`) | `openai` |
 | `--type` | Tipo de pregunta (`problem`, `multiple_choice`) | `problem` |
 | `--no_generar_soluciones` | Omite la creación de archivos de solución | False |
 
-### Uso con Modelos Locales (Offline)
+| `--model` | Nombre específico del modelo (útil para `generic` o overrides) | None |
+| `--base_url` | URL base de la API (útil para `generic` o `local`) | None |
+
+### Uso con DeepSeek
+```bash
+evolutia --tema basicos --api deepseek --output prueba_deepseek
+```
+
+### Uso genérico / otros proveedores (e.g., Groq, Mistral API)
+Puedes usar cualquier API compatible con OpenAI:
+
+# Vía CLI
+evolutia --tema basicos --api generic --base_url https://api.groq.com/openai/v1 --model llama3-70b-8192 --output prueba_groq
+```
+
+### Uso con modelos locales (offline)
 Para usar modelos como Llama 3 o Mistral sin costo de API:
 
 1. Ejecuta tu servidor (ej. `ollama serve`).
 2. Configura `evolutia_config.yaml` (opcional, si usas defaults de Ollama no es necesario):
-   ```yaml
+   
    local:
      base_url: "http://localhost:11434/v1"
      model: "llama3"
@@ -157,6 +176,28 @@ tags:
 
 ### Trazabilidad
 Los ejercicios generados heredan los tags de sus "padres". El archivo final del examen (`examenX.md`) resume todos los temas cubiertos.
+
+---
+
+## Optimizaciones y Rendimiento
+
+EvolutIA incluye varias optimizaciones para mejorar el rendimiento y reducir el uso de recursos:
+
+### Caché de Respuestas LLM
+- **Write-behind con debounce**: Persiste respuestas a disco solo después de 5 segundos de inactividad, reduciendo dramáticamente el I/O de disco.
+- **Límite de memoria RAM**: Configurable (default: 500MB) para evitar saturar la memoria con entradas de caché.
+- **LRU eviction**: Elimina automáticamente entradas menos recientes cuando se excede el límite de tamaño o memoria.
+- **TTL configurable**: Permite expirar entradas automáticamente después de un tiempo determinado (default: 24 horas).
+
+### Soporte Asíncrono
+- Proveedores asíncronos de LLM (`AsyncOpenAIProvider`, `AsyncAnthropicProvider`, `AsyncGeminiProvider`).
+- Generación concurrente de variaciones usando `asyncio.gather()`.
+- Más eficiente que `ThreadPoolExecutor` para operaciones I/O-bound como llamadas a APIs de LLM.
+
+### Imports Centralizados
+- Módulo `evolutia/imports.py` centraliza los imports de dependencias opcionales.
+- Reduce duplicación de código y mejora la mantenibilidad.
+- Proporciona mensajes de error claros cuando faltan dependencias.
 
 ---
 

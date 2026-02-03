@@ -4,12 +4,12 @@ Utiliza APIs de IA para generar variaciones inteligentes.
 """
 import os
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Union, Any
 from dotenv import load_dotenv
 from pathlib import Path
 
 # Imports for new Provider system
-from .llm_providers import get_provider
+from .llm_providers import get_provider, LLMProvider
 from .utils.json_parser import extract_and_parse_json
 
 # Cargar variables de entorno explícitamente desde el directorio del script
@@ -38,26 +38,35 @@ class VariationGenerator:
         self._provider_instance = None
     
     def _get_provider(self):
-        """Lazy loader para el proveedor, permitiendo configuración tardía de props."""
+        """
+        Lazy loader para el proveedor, permitiendo configuración tardía de props.
+
+        Returns:
+            Instancia de LLMProvider si la inicialización fue exitosa
+            None si hubo un error de configuración
+        """
         if self._provider_instance:
             return self._provider_instance
-            
+
         kwargs = {}
         if self.model_name:
             kwargs['model_name'] = self.model_name
         elif self.local_model and self.api_provider == 'local':
              kwargs['model_name'] = self.local_model
-             
-        if self.base_url and self.api_provider == 'local':
+
+        if self.base_url:
             kwargs['base_url'] = self.base_url
 
         try:
             self._provider_instance = get_provider(self.api_provider, **kwargs)
+            logger.info(f"[VariationGenerator] Proveedor inicializado: {self.api_provider}")
+            return self._provider_instance
         except ValueError as e:
-            logger.error(f"Error inicializando proveedor: {e}")
+            logger.error(f"[VariationGenerator] Error inicializando proveedor '{self.api_provider}': {e}")
             return None
-            
-        return self._provider_instance
+        except Exception as e:
+            logger.error(f"[VariationGenerator] Error inesperado inicializando proveedor '{self.api_provider}': {e}")
+            return None
 
     def _create_prompt(self, exercise: Dict, analysis: Dict) -> str:
         """Crea el prompt para generar una variación."""
@@ -96,7 +105,7 @@ REGLAS DE FORMATO:
 Genera solo el contenido solicitado."""
         return prompt
 
-    def _create_quiz_prompt(self, context_info: Dict) -> str:
+    def _create_quiz_prompt(self, context_info: Dict[str, Any]) -> str:
         """Crea prompt para ejercicios de selección única."""
         content = context_info.get('content', '')
         
@@ -124,11 +133,11 @@ REQUISITOS:
 """
         return prompt
 
-    def generate_variation(self, exercise: Dict, analysis: Dict, exercise_type: str = "development") -> Optional[Dict]:
+    def generate_variation(self, exercise: Dict[str, Any], analysis: Dict[str, Any], exercise_type: str = "development") -> Optional[Dict]:
         """
         Genera una variación de un ejercicio existente.
         """
-        # 1. Crear prompt según tipo
+         # 1. Crear prompt según tipo
         if exercise_type == 'multiple_choice':
             context_info = {
                 'content': f"Ejercicio Original:\n{exercise.get('content')}"
@@ -136,17 +145,20 @@ REQUISITOS:
             prompt = self._create_quiz_prompt(context_info)
         else:
             prompt = self._create_prompt(exercise, analysis)
-            
+
         # 2. Get Provider
         provider = self._get_provider()
-        if not provider: return None
-        
+        if not provider:
+            logger.warning("[VariationGenerator] Proveedor no inicializado, no se puede generar variación")
+            return None
+
         # 3. Generar
         content = provider.generate_content(prompt, system_prompt="Eres un experto en diseño de exámenes de ingeniería.")
-        
+
         if not content:
+            logger.warning("[VariationGenerator] Proveedor retornó contenido vacío")
             return None
-            
+
         # 4. Parsear respuesta
         variation_content = ""
         variation_solution = ""
@@ -200,7 +212,7 @@ INSTRUCCIONES:
 """
         return prompt
 
-    def generate_new_exercise_from_topic(self, topic: str, tags: list = None, difficulty: str = "alta", exercise_type: str = "development") -> Optional[Dict]:
+    def generate_new_exercise_from_topic(self, topic: str, tags: Optional[List[str]] = None, difficulty: str = "alta", exercise_type: str = "development") -> Optional[Dict]:
         """
         Genera un ejercicio nuevo desde cero.
         """

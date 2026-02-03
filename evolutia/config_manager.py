@@ -6,7 +6,7 @@ Genera config.yaml basado en la estructura del proyecto y metadatos de archivos.
 import yaml
 import logging
 from pathlib import Path
-from typing import Dict, List, Set, Any
+from typing import Dict, List, Set, Any, Union, Optional
 import sys
 import json
 try:
@@ -40,9 +40,9 @@ EXCLUDED_DIRS = {
 }
 
 class ConfigManager:
-    def __init__(self, base_path: Path, config_path: Path = None):
+    def __init__(self, base_path: Union[Path, str], config_path: Optional[Union[Path, str]] = None):
         self.base_path = Path(base_path)
-        
+
         if config_path:
             self.config_path = Path(config_path)
         else:
@@ -95,9 +95,22 @@ class ConfigManager:
             try:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f) or {}
-                    # Validate on load
-                    if config:
-                        self.validate_config(config)
+
+                    # Validar esquema JSON si está disponible
+                    if config and not self.validate_config(config):
+                        logger.warning("Configuración inválida según esquema JSON, pero continuando...")
+
+                    # Validar valores con ConfigValidator
+                    from .validation import ConfigValidator
+                    validator = ConfigValidator()
+                    is_valid, errors = validator.validate_config(config)
+
+                    if not is_valid:
+                        logger.error("Errores de validación en configuración:")
+                        for error in errors:
+                            logger.error(f"  - {error}")
+                        logger.warning("Continuando con configuración inválida (puede causar errores)")
+
                     return config
             except Exception as e:
                 logger.error(f"Error leyendo config actual: {e}")

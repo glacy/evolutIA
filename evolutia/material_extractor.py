@@ -3,8 +3,9 @@ Extractor de materiales didácticos.
 Lee y parsea archivos Markdown de lecturas, prácticas y tareas.
 """
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import logging
+import time
 
 try:
     from utils.markdown_parser import (
@@ -29,17 +30,23 @@ logger = logging.getLogger(__name__)
 
 class MaterialExtractor:
     """Extrae ejercicios y soluciones de materiales didácticos."""
-    
-    def __init__(self, base_path: Path):
+
+    def __init__(self, base_path: Union[Path, str]):
         """
         Inicializa el extractor.
-        
+
         Args:
             base_path: Ruta base del proyecto (donde están los directorios de temas)
         """
         self.base_path = Path(base_path)
         self.exercises = []
         self.solutions = []
+        # Caché de rutas de archivos válidos para evitar escaneos repetidos
+        self._file_cache: Dict[Path, Dict] = {}
+        # Timestamp del último escaneo
+        self._last_scan_timestamp: float = 0
+        # TTL del caché en segundos (5 minutos)
+        self._cache_ttl = 300
     
     def extract_from_file(self, file_path: Path) -> Dict:
         """
@@ -68,11 +75,11 @@ class MaterialExtractor:
                     if include_path.exists():
                         exercise['resolved_content'] = read_markdown_file(include_path)
                     else:
-                        logger.warning(f"Include no encontrado: {include_path}")
+                        logger.warning(f"[MaterialExtractor] Include no encontrado en ejercicio: {include_path} (archivo: {file_path})")
                         exercise['resolved_content'] = exercise['content']
                 else:
                     exercise['resolved_content'] = exercise['content']
-            
+
             # Resolver includes de soluciones
             for solution in solutions:
                 resolved_content_parts = []
@@ -84,8 +91,8 @@ class MaterialExtractor:
                     if include_path.exists():
                         resolved_content_parts.append(read_markdown_file(include_path))
                     else:
-                        logger.warning(f"Include no encontrado: {include_path}")
-                
+                        logger.warning(f"[MaterialExtractor] Include no encontrado en solución: {include_path} (archivo: {file_path})")
+
                 if resolved_content_parts:
                     solution['resolved_content'] = '\n\n---\n\n'.join(resolved_content_parts)
                 else:
@@ -99,28 +106,28 @@ class MaterialExtractor:
                 'content_body': content_body  # Exponer contenido para indexación de lecturas
             }
         except Exception as e:
-            logger.error(f"Error extrayendo de {file_path}: {e}")
+            logger.error(f"[MaterialExtractor] Error extrayendo de {file_path}: {e}")
             return {
                 'file_path': file_path,
                 'frontmatter': {},
                 'exercises': [],
                 'solutions': []
             }
-    
+
     def extract_from_directory(self, directory: Path, pattern: str = "*.md") -> List[Dict]:
         """
         Extrae materiales de todos los archivos .md en un directorio.
-        
+
         Args:
             directory: Directorio a procesar
             pattern: Patrón de búsqueda de archivos
-            
+
         Returns:
             Lista de diccionarios con materiales extraídos
         """
         directory = Path(directory)
         if not directory.exists():
-            logger.warning(f"Directorio no existe: {directory}")
+            logger.warning(f"[MaterialExtractor] Directorio no existe: {directory}")
             return []
         
         materials = []
@@ -234,4 +241,37 @@ class MaterialExtractor:
                 all_exercises.append(exercise_data)
         
         return all_exercises
+
+    def clear_cache(self):
+        """Limpia el caché de archivos."""
+        self._file_cache.clear()
+        self._last_scan_timestamp = 0
+        logger.debug("[MaterialExtractor] Caché de archivos limpiado")
+
+    def _is_cache_valid(self, file_path: Path) -> bool:
+        """
+        Verifica si el caché para un archivo es válido.
+
+        Args:
+            file_path: Ruta del archivo a verificar
+
+        Returns:
+            True si el caché es válido, False si necesita recacheo
+        """
+        if file_path not in self._file_cache:
+            return False
+
+        # Verificar si el archivo fue modificado
+        try:
+            cache_entry = self._file_cache[file_path]
+            file_mtime = file_path.stat().st_mtime
+
+            # Usar el timestamp de escaneo más reciente para verificar
+            if file_mtime > self._last_scan_timestamp:
+                return False
+
+            return True
+        except (OSError, KeyError):
+            return False
+
 
