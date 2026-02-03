@@ -31,6 +31,28 @@ except ImportError:
 class ExerciseAnalyzer:
     """Analiza la complejidad y estructura de ejercicios."""
 
+    TYPE_PATTERNS = {
+        'demostracion': re.compile(r'(?i)(demuestre|pruebe|verifique|muestre|justifique|demostraci[oó]n)'),
+        'calculo': re.compile(r'(?i)(calcule|halle|encuentre|resuelva|eval[uú]e|calcular|obtenga|determinar)'),
+        'aplicacion': re.compile(r'(?i)(aplicaci[oó]n|problema|vida real|modelo|f[íi]sic[ao]|ingenier[íi]a|econom[íi]a|contexto)')
+    }
+
+    STEP_KEYWORDS_PATTERN = re.compile(
+        r'(?i)(primero|luego|despu[ée]s|finalmente|entonces|por lo tanto|conclusi[oó]n|paso|seguidamente)',
+        re.MULTILINE
+    )
+
+    CONCEPT_PATTERNS = {
+        'integrals': [r'(?i)integral', r'\\int', r'\\iint', r'\\iiint', r'\\oint'],
+        'derivatives': [r'(?i)derivada', r'\\frac{d}{d', r'\\[dp]artial', r'\''],
+        'limits': [r'(?i)l[íi]mite', r'\\lim'],
+        'series': [r'(?i)serie', r'(?i)sucesi[oó]n', r'\\sum', r'convergencia'],
+        'vectors': [r'(?i)vector', r'\\vec', r'\\mathbf', r'producto punto', r'producto cruz'],
+        'matrices': [r'(?i)matriz', r'(?i)determinante', r'\\begin{pmatrix}', r'\\begin{bmatrix}', r'autovalor'],
+        'coordinate_systems': [r'(?i)coordenadas', r'(?i)polares', r'(?i)esf[ée]ricas', r'(?i)cil[íi]ndricas', r'jacobian[oa]'],
+        'vector_operations': [r'(?i)gradiente', r'(?i)divergencia', r'(?i)rotacional', r'\\nabla', r'teorema de stokes', r'teorema de green', r'teorema de la divergencia']
+    }
+
     def __init__(self, cache: Optional['ExerciseAnalysisCache'] = None):
         """
         Inicializa el analizador.
@@ -38,8 +60,6 @@ class ExerciseAnalyzer:
         Args:
             cache: Instancia opcional de ExerciseAnalysisCache para cachear análisis
         """
-        pass
-
         self.cache = cache
 
     def identify_exercise_type(self, content: str) -> str:
