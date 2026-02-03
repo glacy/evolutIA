@@ -7,7 +7,7 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 
 
-## [0.1.4] - 2026-02-03
+## [0.1.5] - 2026-02-03
 
 ### Corregido
 - Solucionado `ImportError` al importar `ConfigValidator`. Se exportaron correctamente las clases `ConfigValidator` y `ArgsValidator` en `evolutia/validation/__init__.py`.

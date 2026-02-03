@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="evolutia",
-    version="0.1.4",
+    version="0.1.5",
     include_package_data=True,
     author="Gerardo Lacy-Mora",
     author_email="gerardolacymora@gmail.com",
