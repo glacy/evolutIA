@@ -216,6 +216,56 @@ EvolutIA incluye varias optimizaciones para mejorar el rendimiento y reducir el 
 
 ---
 
+## Herramienta de IA Asistente: opencode
+
+El proceso de optimización de EvolutIA fue asistido por **opencode**, una herramienta de IA especializada en ingeniería de software que utiliza el modelo **GLM-4.7 (zai-coding-plan/glm-4.7)**.
+
+### Modelo Utilizado
+
+- **Modelo**: GLM-4.7
+- **Variante**: zai-coding-plan/glm-4.7
+- **Capacidades**: Análisis de código, planificación de arquitectura, implementación de optimizaciones, documentación técnica
+
+### Optimizaciones Implementadas
+
+Gracias a la asistencia de opencode, se implementaron 9 optimizaciones prioritarias para mejorar el rendimiento y mantenimiento de EvolutIA:
+
+#### Prioridad Alta
+- ✅ Caché LLM: write-behind con debounce para reducir I/O de disco
+- ✅ Eliminación de build/ del control de versiones (reducción de ~12k líneas duplicadas)
+
+#### Prioridad Media
+- ✅ Implementación de async/await para llamadas LLM (mayor throughput)
+- ✅ Límite de memoria RAM para caché LLM (evitar saturación)
+
+#### Prioridad Baja
+- ✅ Imports centralizados en módulo evolutia/imports.py
+- ✅ Caché de rutas de archivos válidos en MaterialExtractor
+- ✅ Lazy loading de embeddings en RAGIndexer/RAGRetriever
+- ✅ Límite de paginación para queries ChromaDB
+- ✅ Sistema de retry automático con backoff exponencial
+
+### Proceso de Optimización
+
+El flujo de trabajo con opencode siguió este proceso iterativo:
+
+1. **Análisis**: Revisión exhaustiva del código existente (12k líneas) para identificar oportunidades de optimización
+2. **Priorización**: Clasificación de mejoras por impacto (alto/medio/bajo) y esfuerzo de implementación
+3. **Planificación**: Diseño detallado de cada optimización antes de implementación
+4. **Implementación**: Código optimizado siguiendo las convenciones de estilo del proyecto
+5. **Verificación**: Ejecución de tests para asegurar compatibilidad
+6. **Documentación**: Actualización de CHANGELOG.md, AGENTS.md, docs/ARCHITECTURE.md y README.md
+
+### Beneficios Obtenidos
+
+- **Menos tiempo de desarrollo**: Las optimizaciones se implementaron de manera eficiente y coordinada
+- **Código más limpio**: Reducción de duplicación y mejora de mantenibilidad
+- **Mejor documentación**: Actualización completa de CHANGELOG y documentación técnica
+- **Tests pasando**: Todas las optimizaciones mantuvieron compatibilidad con tests existentes
+- **Arquitectura consistente**: Todas las optimizaciones siguen las convenciones y patrones del proyecto
+
+---
+
 ## Estructura del Proyecto
 
 Se recomienda la siguiente estructura para tus cursos:
