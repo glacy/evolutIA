@@ -6,7 +6,13 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [0.1.3] - 2026-02-03
+
+## [0.1.4] - 2026-02-03
+
+### Corregido
+- Solucionado `ImportError` al importar `ConfigValidator`. Se exportaron correctamente las clases `ConfigValidator` y `ArgsValidator` en `evolutia/validation/__init__.py`.
+- Solucionado advertencia de falta de esquema JSON. Se añadió `MANIFEST.in` para incluir los archivos de esquema (`*.json`) en la distribución del paquete.
+
 
 ### Corregido
 - Solucionado `AttributeError: 'ExerciseAnalyzer' object has no attribute 'TYPE_PATTERNS'` en `ExerciseAnalyzer`. Faltaban las definiciones de expresiones regulares `TYPE_PATTERNS`, `STEP_KEYWORDS_PATTERN` y `CONCEPT_PATTERNS`.

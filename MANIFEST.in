@@ -1,0 +1,3 @@
+recursive-include evolutia/schemas *.json
+include README.md
+include LICENSE

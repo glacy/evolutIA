@@ -1,4 +1,5 @@
 LICENSE
+MANIFEST.in
 README.md
 evolutia_cli.py
 setup.py
@@ -31,6 +32,7 @@ evolutia/rag/enhanced_variation_generator.py
 evolutia/rag/rag_indexer.py
 evolutia/rag/rag_manager.py
 evolutia/rag/rag_retriever.py
+evolutia/schemas/config.schema.json
 evolutia/utils/__init__.py
 evolutia/utils/json_parser.py
 evolutia/utils/markdown_parser.py

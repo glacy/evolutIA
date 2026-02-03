@@ -6,7 +6,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="evolutia",
-    version="0.1.3",
+    version="0.1.4",
+    include_package_data=True,
     author="Gerardo Lacy-Mora",
     author_email="gerardolacymora@gmail.com",
     description="Sistema automatizado para generar preguntas de examen desafiantes basadas en materiales didácticos existentes",
