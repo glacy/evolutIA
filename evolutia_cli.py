@@ -64,6 +64,7 @@ Ejemplos:
     parser.add_argument('--query', type=str, help='Consulta RAG')
     parser.add_argument('--workers', type=int, default=5, help='Número de hilos para generación paralela')
     parser.add_argument('--analyze', action='store_true', help='Analizar estructura y generar config.yaml')
+    parser.add_argument('--max_tokens', type=int, default=2000, help='Máximo de tokens para generación')
 
     args = parser.parse_args()
 

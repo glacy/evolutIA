@@ -12,6 +12,11 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 ### Corregido
 - Solucionado `ImportError` al importar `ConfigValidator`. Se exportaron correctamente las clases `ConfigValidator` y `ArgsValidator` en `evolutia/validation/__init__.py`.
 - Solucionado advertencia de falta de esquema JSON. Se añadió `MANIFEST.in` para incluir los archivos de esquema (`*.json`) en la distribución del paquete.
+- Solucionado problema de contenido vacío con proveedor genérico (Z.AI / GLM-4.7) debido a límite de tokens.
+
+### Añadido
+- Nuevo argumento CLI `--max_tokens` para configurar el límite de tokens de generación (por defecto 2000).
+- Propagación de `max_tokens` a través del motor (`EvolutiaEngine`) y generadores (`VariationGenerator`) hacia los proveedores de LLM.
 
 
 ### Corregido

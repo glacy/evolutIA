@@ -142,8 +142,20 @@ class OpenAICompatibleProvider(LLMProvider):
                 temperature=kwargs.get("temperature", self.DEFAULT_TEMPERATURE),
                 max_tokens=kwargs.get("max_tokens", self.DEFAULT_MAX_TOKENS)
             )
-            content = response.choices[0].message.content.strip()
-            logger.info(f"[{provider_name}] Contenido generado exitosamente (modelo={model}, longitud={len(content)})")
+            message = response.choices[0].message
+            finish_reason = response.choices[0].finish_reason
+            
+            if hasattr(message, 'content') and message.content is not None:
+                content = message.content.strip()
+            else:
+                content = ""
+                logger.warning(f"[{provider_name}] Message content is None")
+
+            if not content:
+                logger.warning(f"[{provider_name}] Contenido vacío recibido. Finish reason: {finish_reason}")
+                logger.debug(f"[{provider_name}] Raw response: {response}")
+
+            logger.info(f"[{provider_name}] Contenido generado exitosamente (modelo={model}, longitud={len(content)}, reason={finish_reason})")
 
             # Guardar en caché
             if self.cache:

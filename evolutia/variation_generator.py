@@ -133,7 +133,7 @@ REQUISITOS:
 """
         return prompt
 
-    def generate_variation(self, exercise: Dict[str, Any], analysis: Dict[str, Any], exercise_type: str = "development") -> Optional[Dict]:
+    def generate_variation(self, exercise: Dict[str, Any], analysis: Dict[str, Any], exercise_type: str = "development", max_tokens: int = 2000) -> Optional[Dict]:
         """
         Genera una variación de un ejercicio existente.
         """
@@ -153,7 +153,7 @@ REQUISITOS:
             return None
 
         # 3. Generar
-        content = provider.generate_content(prompt, system_prompt="Eres un experto en diseño de exámenes de ingeniería.")
+        content = provider.generate_content(prompt, system_prompt="Eres un experto en diseño de exámenes de ingeniería.", max_tokens=max_tokens)
 
         if not content:
             logger.warning("[VariationGenerator] Proveedor retornó contenido vacío")
@@ -212,7 +212,7 @@ INSTRUCCIONES:
 """
         return prompt
 
-    def generate_new_exercise_from_topic(self, topic: str, tags: Optional[List[str]] = None, difficulty: str = "alta", exercise_type: str = "development") -> Optional[Dict]:
+    def generate_new_exercise_from_topic(self, topic: str, tags: Optional[List[str]] = None, difficulty: str = "alta", exercise_type: str = "development", max_tokens: int = 2000) -> Optional[Dict]:
         """
         Genera un ejercicio nuevo desde cero.
         """
@@ -233,7 +233,7 @@ INSTRUCCIONES:
         if not provider: return None
         
         # 3. Generar
-        content = provider.generate_content(prompt)
+        content = provider.generate_content(prompt, max_tokens=max_tokens)
         if not content: return None
         
         # 4. Parsear
@@ -265,12 +265,12 @@ INSTRUCCIONES:
              'type': exercise_type
         }
 
-    def generate_variation_with_solution(self, exercise: Dict, analysis: Dict) -> Optional[Dict]:
+    def generate_variation_with_solution(self, exercise: Dict, analysis: Dict, max_tokens: int = 2000) -> Optional[Dict]:
         """
         Genera una variación con su solución.
         """
         # Primero generar el ejercicio
-        variation = self.generate_variation(exercise, analysis)
+        variation = self.generate_variation(exercise, analysis, max_tokens=max_tokens)
         
         if not variation:
             return None
@@ -290,7 +290,7 @@ EJERCICIO:
 
 GENERA LA SOLUCIÓN COMPLETA:"""
         
-        solution_content = provider.generate_content(solution_prompt)
+        solution_content = provider.generate_content(solution_prompt, max_tokens=max_tokens)
         
         if solution_content:
             variation['variation_solution'] = solution_content

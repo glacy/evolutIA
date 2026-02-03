@@ -146,18 +146,21 @@ class EvolutiaEngine:
                     variation = generator.generate_variation(
                         exercise_base, 
                         analysis, 
-                        exercise_type=args.type
+                        exercise_type=args.type,
+                        max_tokens=args.max_tokens
                     )
                 elif not args.no_generar_soluciones:
                     variation = generator.generate_variation_with_solution(
                         exercise_base, 
-                        analysis
+                        analysis,
+                        max_tokens=args.max_tokens
                     )
                 else:
                     variation = generator.generate_variation(
                         exercise_base, 
                         analysis, 
-                        exercise_type=args.type
+                        exercise_type=args.type,
+                        max_tokens=args.max_tokens
                     )
                 
                 if not variation:
@@ -188,7 +191,8 @@ class EvolutiaEngine:
         topic: str,
         tags: List[str],
         complexity: str,
-        ex_type: str
+        ex_type: str,
+        args: argparse.Namespace
     ) -> Optional[Dict]:
         """
         Helper para modo creación.
@@ -202,7 +206,8 @@ class EvolutiaEngine:
                 topic,
                 tags,
                 difficulty=complexity,
-                exercise_type=ex_type
+                exercise_type=ex_type,
+                max_tokens=args.max_tokens
             )
         except Exception as e:
             logger.error(f"[EvolutiaEngine] Error en creación de ejercicio nuevo (topic={topic}): {e}")
@@ -254,7 +259,7 @@ class EvolutiaEngine:
                 
                 tasks.append({
                     'func': self._generate_creation_mode,
-                    'args': (generator, current_topic, current_tags, args.complejidad, args.type)
+                    'args': (generator, current_topic, current_tags, args.complejidad, args.type, args)
                 })
         else:
             # Variation Mode Logic
@@ -332,14 +337,16 @@ class EvolutiaEngine:
                             generator.generate_variation,
                             exercise_base,
                             analysis,
-                            args.type
+                            exercise_type=args.type,
+                            max_tokens=args.max_tokens
                         )
                     elif not args.no_generar_soluciones:
                         variation = await loop.run_in_executor(
                             None,
                             generator.generate_variation_with_solution,
                             exercise_base,
-                            analysis
+                            analysis,
+                            max_tokens=args.max_tokens
                         )
                     else:
                         variation = await loop.run_in_executor(
@@ -347,7 +354,8 @@ class EvolutiaEngine:
                             generator.generate_variation,
                             exercise_base,
                             analysis,
-                            args.type
+                            exercise_type=args.type,
+                            max_tokens=args.max_tokens
                         )
 
                     if not variation:
@@ -381,6 +389,7 @@ class EvolutiaEngine:
         tags: List[str],
         complexity: str,
         ex_type: str,
+        args: argparse.Namespace,
         semaphore: asyncio.Semaphore
     ) -> Optional[Dict]:
         """
@@ -399,7 +408,8 @@ class EvolutiaEngine:
                     topic,
                     tags,
                     complexity,
-                    ex_type
+                    ex_type,
+                    args.max_tokens
                 )
             except Exception as e:
                 logger.error(f"[EvolutiaEngine] Error en async creación (topic={topic}): {e}")
@@ -463,7 +473,8 @@ class EvolutiaEngine:
                     current_topic,
                     current_tags,
                     args.complejidad,
-                    args.type
+                    args.type,
+                    args.max_tokens
                 ))
         else:
             if args.label:
@@ -498,6 +509,7 @@ class EvolutiaEngine:
                     task_info[3],  # tags
                     task_info[4],  # complexity
                     task_info[5],  # ex_type
+                    task_info[6],  # max_tokens
                     semaphore
                 ))
             else:
