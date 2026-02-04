@@ -53,6 +53,8 @@ class ExerciseAnalyzer:
         'vector_operations': [r'(?i)gradiente', r'(?i)divergencia', r'(?i)rotacional', r'\\nabla', r'teorema de stokes', r'teorema de green', r'teorema de la divergencia']
     }
 
+    COMPILED_CONCEPT_PATTERNS = None
+
     def __init__(self, cache: Optional['ExerciseAnalysisCache'] = None):
         """
         Inicializa el analizador.
@@ -61,6 +63,24 @@ class ExerciseAnalyzer:
             cache: Instancia opcional de ExerciseAnalysisCache para cachear análisis
         """
         self.cache = cache
+
+        # Pre-compilar patrones de conceptos si no existen
+        if ExerciseAnalyzer.COMPILED_CONCEPT_PATTERNS is None:
+            ExerciseAnalyzer.COMPILED_CONCEPT_PATTERNS = {}
+            for concept, patterns in self.CONCEPT_PATTERNS.items():
+                # Limpiar patrones de banderas globales internas como (?i)
+                clean_patterns = []
+                for p in patterns:
+                    if p.startswith('(?i)'):
+                        clean_patterns.append(p[4:])
+                    else:
+                        clean_patterns.append(p)
+
+                combined_pattern = '|'.join(f'(?:{p})' for p in clean_patterns)
+                ExerciseAnalyzer.COMPILED_CONCEPT_PATTERNS[concept] = re.compile(
+                    combined_pattern,
+                    re.IGNORECASE
+                )
 
     def identify_exercise_type(self, content: str) -> str:
         """
@@ -147,11 +167,25 @@ class ExerciseAnalyzer:
         """
         concepts = set()
 
-        for concept_name, patterns in self.CONCEPT_PATTERNS.items():
-            for pattern in patterns:
-                if re.search(pattern, content, re.IGNORECASE):
-                    concepts.add(concept_name)
-                    break
+        # Usar patrones pre-compilados si están disponibles
+        if ExerciseAnalyzer.COMPILED_CONCEPT_PATTERNS:
+            patterns_dict = ExerciseAnalyzer.COMPILED_CONCEPT_PATTERNS
+        else:
+            # Fallback (no debería ocurrir)
+            patterns_dict = {}
+            for concept, patterns in self.CONCEPT_PATTERNS.items():
+                clean_patterns = []
+                for p in patterns:
+                    if p.startswith('(?i)'):
+                        clean_patterns.append(p[4:])
+                    else:
+                        clean_patterns.append(p)
+                combined_pattern = '|'.join(f'(?:{p})' for p in clean_patterns)
+                patterns_dict[concept] = re.compile(combined_pattern, re.IGNORECASE)
+
+        for concept_name, pattern in patterns_dict.items():
+            if pattern.search(content):
+                concepts.add(concept_name)
 
         return concepts
 
