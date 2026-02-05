@@ -14,6 +14,16 @@ LATIN_PATTERN = re.compile(r'\\vec\{([A-Za-z])\}|\\mathbf\{([A-Za-z])\}|\\hat\{(
 # Letras griegas: \alpha, \beta, \theta, etc.
 GREEK_PATTERN = re.compile(r'\\(alpha|beta|gamma|delta|epsilon|theta|phi|rho|omega|sigma|lambda|mu|nu|pi|tau)')
 
+# Combined pattern to extract all math expressions in one pass.
+# Order matters: blocks first, then display, then inline to avoid incorrect nesting detection.
+# DOTALL is needed for block content (.*?), and doesn't affect negations ([^$]+).
+COMBINED_MATH_PATTERN = re.compile(
+    r':::\{math\}\s*(?P<block_content>.*?)\s*:::|'
+    r'\$\$(?P<display_dollar>[^$]+)\$\$|\\\[(?P<display_bracket>[^\]]+)\\\]|'
+    r'\$(?P<inline_dollar>[^$]+)\$|\\\((?P<inline_paren>[^\)]+)\\\)',
+    re.DOTALL
+)
+
 
 def extract_math_expressions(content: str) -> List[str]:
     r"""
@@ -35,27 +45,14 @@ def extract_math_expressions(content: str) -> List[str]:
 
     expressions = []
 
-    # 1. Bloques math de MyST: :::{math} ... :::
-    # Se procesan primero y se eliminan del contenido para evitar duplicados si contienen $ o $$
-    math_block_pattern = r':::\{math\}\s*(.*?)\s*:::'
-    for match in re.finditer(math_block_pattern, content, re.DOTALL):
-        expr = match.group(1).strip()
-        if expr:
-            expressions.append(expr)
-    content = re.sub(math_block_pattern, '', content, flags=re.DOTALL)
-
-    # 2. Expresiones display: $$...$$ o \[...\]
-    display_pattern = r'\$\$([^$]+)\$\$|\\\[([^\]]+)\\\]'
-    for match in re.finditer(display_pattern, content, re.DOTALL):
-        expr = match.group(1) or match.group(2)
-        if expr:
-            expressions.append(expr.strip())
-    content = re.sub(display_pattern, '', content, flags=re.DOTALL)
-
-    # 3. Expresiones inline: $...$ o \(...\)
-    inline_pattern = r'\$([^$]+)\$|\\\(([^\)]+)\\\)'
-    for match in re.finditer(inline_pattern, content):
-        expr = match.group(1) or match.group(2)
+    for match in COMBINED_MATH_PATTERN.finditer(content):
+        expr = (
+            match.group('block_content') or
+            match.group('display_dollar') or
+            match.group('display_bracket') or
+            match.group('inline_dollar') or
+            match.group('inline_paren')
+        )
         if expr:
             expressions.append(expr.strip())
 
