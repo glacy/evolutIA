@@ -14,6 +14,14 @@ LATIN_PATTERN = re.compile(r'\\vec\{([A-Za-z])\}|\\mathbf\{([A-Za-z])\}|\\hat\{(
 # Letras griegas: \alpha, \beta, \theta, etc.
 GREEK_PATTERN = re.compile(r'\\(alpha|beta|gamma|delta|epsilon|theta|phi|rho|omega|sigma|lambda|mu|nu|pi|tau)')
 
+# Patrones compilados para operaciones matemáticas
+INTEGRALS_PATTERN = re.compile(r'\\int|\\oint')
+DERIVATIVES_PATTERN = re.compile(r'\\partial|\\nabla|\\frac\{d')
+SUMS_PATTERN = re.compile(r'\\sum|\\prod')
+VECTORS_PATTERN = re.compile(r'\\vec|\\mathbf')
+MATRICES_PATTERN = re.compile(r'\\begin\{matrix\}|\\begin\{pmatrix\}|\\begin\{bmatrix\}')
+FUNCTIONS_PATTERN = re.compile(r'\\sin|\\cos|\\tan|\\exp|\\log|\\ln')
+
 # Combined pattern to extract all math expressions in one pass.
 # Order matters: blocks first, then display, then inline to avoid incorrect nesting detection.
 # DOTALL is needed for block content (.*?), and doesn't affect negations ([^$]+).
@@ -100,12 +108,12 @@ def count_math_operations(expression: str) -> Dict[str, int]:
         Diccionario con conteo de operaciones
     """
     operations = {
-        'integrals': len(re.findall(r'\\int|\\oint', expression)),
-        'derivatives': len(re.findall(r'\\partial|\\nabla|\\frac\{d', expression)),
-        'sums': len(re.findall(r'\\sum|\\prod', expression)),
-        'vectors': len(re.findall(r'\\vec|\\mathbf', expression)),
-        'matrices': len(re.findall(r'\\begin\{matrix\}|\\begin\{pmatrix\}|\\begin\{bmatrix\}', expression)),
-        'functions': len(re.findall(r'\\sin|\\cos|\\tan|\\exp|\\log|\\ln', expression)),
+        'integrals': len(INTEGRALS_PATTERN.findall(expression)),
+        'derivatives': len(DERIVATIVES_PATTERN.findall(expression)),
+        'sums': len(SUMS_PATTERN.findall(expression)),
+        'vectors': len(VECTORS_PATTERN.findall(expression)),
+        'matrices': len(MATRICES_PATTERN.findall(expression)),
+        'functions': len(FUNCTIONS_PATTERN.findall(expression)),
     }
     return operations
 
