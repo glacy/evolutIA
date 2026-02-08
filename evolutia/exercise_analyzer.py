@@ -42,15 +42,19 @@ class ExerciseAnalyzer:
         re.MULTILINE
     )
 
+    NUMBERED_STEPS_PATTERN = re.compile(r'^\s*\d+[\.\)]\s+', re.MULTILINE)
+    EQUATION_BLOCKS_PATTERN = re.compile(r'\\begin\{(align|equation|aligned|eqnarray)\}')
+    SEPARATORS_PATTERN = re.compile(r'\n\n+')
+
     CONCEPT_PATTERNS = {
-        'integrals': [r'(?i)integral', r'\\int', r'\\iint', r'\\iiint', r'\\oint'],
-        'derivatives': [r'(?i)derivada', r'\\frac{d}{d', r'\\[dp]artial', r'\''],
-        'limits': [r'(?i)l[íi]mite', r'\\lim'],
-        'series': [r'(?i)serie', r'(?i)sucesi[oó]n', r'\\sum', r'convergencia'],
-        'vectors': [r'(?i)vector', r'\\vec', r'\\mathbf', r'producto punto', r'producto cruz'],
-        'matrices': [r'(?i)matriz', r'(?i)determinante', r'\\begin{pmatrix}', r'\\begin{bmatrix}', r'autovalor'],
-        'coordinate_systems': [r'(?i)coordenadas', r'(?i)polares', r'(?i)esf[ée]ricas', r'(?i)cil[íi]ndricas', r'jacobian[oa]'],
-        'vector_operations': [r'(?i)gradiente', r'(?i)divergencia', r'(?i)rotacional', r'\\nabla', r'teorema de stokes', r'teorema de green', r'teorema de la divergencia']
+        'integrals': [re.compile(p, re.IGNORECASE) for p in [r'(?i)integral', r'\\int', r'\\iint', r'\\iiint', r'\\oint']],
+        'derivatives': [re.compile(p, re.IGNORECASE) for p in [r'(?i)derivada', r'\\frac{d}{d', r'\\[dp]artial', r'\'']],
+        'limits': [re.compile(p, re.IGNORECASE) for p in [r'(?i)l[íi]mite', r'\\lim']],
+        'series': [re.compile(p, re.IGNORECASE) for p in [r'(?i)serie', r'(?i)sucesi[oó]n', r'\\sum', r'convergencia']],
+        'vectors': [re.compile(p, re.IGNORECASE) for p in [r'(?i)vector', r'\\vec', r'\\mathbf', r'producto punto', r'producto cruz']],
+        'matrices': [re.compile(p, re.IGNORECASE) for p in [r'(?i)matriz', r'(?i)determinante', r'\\begin{pmatrix}', r'\\begin{bmatrix}', r'autovalor']],
+        'coordinate_systems': [re.compile(p, re.IGNORECASE) for p in [r'(?i)coordenadas', r'(?i)polares', r'(?i)esf[ée]ricas', r'(?i)cil[íi]ndricas', r'jacobian[oa]']],
+        'vector_operations': [re.compile(p, re.IGNORECASE) for p in [r'(?i)gradiente', r'(?i)divergencia', r'(?i)rotacional', r'\\nabla', r'teorema de stokes', r'teorema de green', r'teorema de la divergencia']]
     }
 
     def __init__(self, cache: Optional['ExerciseAnalysisCache'] = None):
@@ -111,19 +115,16 @@ class ExerciseAnalyzer:
             return 0
 
         # Contar numeración explícita
-        numbered_steps = len(re.findall(r'^\s*\d+[\.\)]\s+', solution_content, re.MULTILINE))
+        numbered_steps = len(self.NUMBERED_STEPS_PATTERN.findall(solution_content))
 
         # Contar palabras clave de pasos
         keyword_steps = len(self.STEP_KEYWORDS_PATTERN.findall(solution_content))
 
         # Contar bloques de ecuaciones (align, equation)
-        equation_blocks = len(re.findall(
-            r'\\begin\{(align|equation|aligned|eqnarray)\}',
-            solution_content
-        ))
+        equation_blocks = len(self.EQUATION_BLOCKS_PATTERN.findall(solution_content))
 
         # Estimar pasos basado en separadores
-        separators = len(re.findall(r'\n\n+', solution_content))
+        separators = len(self.SEPARATORS_PATTERN.findall(solution_content))
 
         # Tomar el máximo de los métodos
         estimated_steps = max(
@@ -149,7 +150,7 @@ class ExerciseAnalyzer:
 
         for concept_name, patterns in self.CONCEPT_PATTERNS.items():
             for pattern in patterns:
-                if re.search(pattern, content, re.IGNORECASE):
+                if pattern.search(content):
                     concepts.add(concept_name)
                     break
 
