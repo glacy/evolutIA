@@ -43,14 +43,14 @@ class ExerciseAnalyzer:
     )
 
     CONCEPT_PATTERNS = {
-        'integrals': [r'(?i)integral', r'\\int', r'\\iint', r'\\iiint', r'\\oint'],
-        'derivatives': [r'(?i)derivada', r'\\frac{d}{d', r'\\[dp]artial', r'\''],
-        'limits': [r'(?i)l[íi]mite', r'\\lim'],
-        'series': [r'(?i)serie', r'(?i)sucesi[oó]n', r'\\sum', r'convergencia'],
-        'vectors': [r'(?i)vector', r'\\vec', r'\\mathbf', r'producto punto', r'producto cruz'],
-        'matrices': [r'(?i)matriz', r'(?i)determinante', r'\\begin{pmatrix}', r'\\begin{bmatrix}', r'autovalor'],
-        'coordinate_systems': [r'(?i)coordenadas', r'(?i)polares', r'(?i)esf[ée]ricas', r'(?i)cil[íi]ndricas', r'jacobian[oa]'],
-        'vector_operations': [r'(?i)gradiente', r'(?i)divergencia', r'(?i)rotacional', r'\\nabla', r'teorema de stokes', r'teorema de green', r'teorema de la divergencia']
+        'integrals': re.compile(r'integral|\\int|\\iint|\\iiint|\\oint', re.IGNORECASE),
+        'derivatives': re.compile(r'derivada|\\frac{d}{d|\\[dp]artial|\'', re.IGNORECASE),
+        'limits': re.compile(r'l[íi]mite|\\lim', re.IGNORECASE),
+        'series': re.compile(r'serie|sucesi[oó]n|\\sum|convergencia', re.IGNORECASE),
+        'vectors': re.compile(r'vector|\\vec|\\mathbf|producto punto|producto cruz', re.IGNORECASE),
+        'matrices': re.compile(r'matriz|determinante|\\begin\{pmatrix\}|\\begin\{bmatrix\}|autovalor', re.IGNORECASE),
+        'coordinate_systems': re.compile(r'coordenadas|polares|esf[ée]ricas|cil[íi]ndricas|jacobian[oa]', re.IGNORECASE),
+        'vector_operations': re.compile(r'gradiente|divergencia|rotacional|\\nabla|teorema de stokes|teorema de green|teorema de la divergencia', re.IGNORECASE)
     }
 
     def __init__(self, cache: Optional['ExerciseAnalysisCache'] = None):
@@ -147,11 +147,9 @@ class ExerciseAnalyzer:
         """
         concepts = set()
 
-        for concept_name, patterns in self.CONCEPT_PATTERNS.items():
-            for pattern in patterns:
-                if re.search(pattern, content, re.IGNORECASE):
-                    concepts.add(concept_name)
-                    break
+        for concept_name, pattern in self.CONCEPT_PATTERNS.items():
+            if pattern.search(content):
+                concepts.add(concept_name)
 
         return concepts
 
