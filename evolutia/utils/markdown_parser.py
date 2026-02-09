@@ -9,6 +9,13 @@ from typing import Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
+# Pre-compiled regex patterns for performance optimization
+# Compiling regexes at module level avoids recompilation on every function call
+FRONTMATTER_PATTERN = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
+EXERCISE_PATTERN = re.compile(r'(`{3,4})\{exercise\}(?:\s+\d+)?\s*\n:label:\s+(\S+)\s*\n(.*?)(?=\1)', re.DOTALL)
+SOLUTION_PATTERN = re.compile(r'(`{3,4})\{solution\}\s+(\S+)\s*\n:label:\s+(\S+)\s*\n(.*?)(?=\1)', re.DOTALL)
+INCLUDE_PATTERN = re.compile(r'```\{include\}\s+(.+?)\s*```', re.DOTALL)
+
 
 def extract_frontmatter(content: str) -> Tuple[Dict[str, str], str]:
     """
@@ -23,8 +30,7 @@ def extract_frontmatter(content: str) -> Tuple[Dict[str, str], str]:
     if not content:
         return {}, ""
 
-    frontmatter_pattern = r'^---\s*\n(.*?)\n---\s*\n'
-    match = re.match(frontmatter_pattern, content, re.DOTALL)
+    match = FRONTMATTER_PATTERN.match(content)
 
     if match:
         frontmatter_str = match.group(1)
@@ -61,12 +67,8 @@ def extract_exercise_blocks(content: str) -> List[Dict[str, Union[str, None]]]:
     if not content:
         return exercises
 
-    # Patrón para bloques de ejercicio MyST
-    # Captura delimitador (grupo 1), label (grupo 2) y contenido (grupo 3)
     # Usa backreference \1 para coincidir con la longitud exacta del delimitador de cierre
-    exercise_pattern = r'(`{3,4})\{exercise\}(?:\s+\d+)?\s*\n:label:\s+(\S+)\s*\n(.*?)(?=\1)'
-
-    matches = re.finditer(exercise_pattern, content, re.DOTALL)
+    matches = EXERCISE_PATTERN.finditer(content)
 
     for match in matches:
         # group(1) es el delimitador
@@ -74,7 +76,7 @@ def extract_exercise_blocks(content: str) -> List[Dict[str, Union[str, None]]]:
         exercise_content = match.group(3).strip()
 
         # Buscar si hay un include dentro
-        include_match = re.search(r'```\{include\}\s+(.+?)\s*```', exercise_content, re.DOTALL)
+        include_match = INCLUDE_PATTERN.search(exercise_content)
         if include_match:
             include_path = include_match.group(1).strip()
             exercises.append({
@@ -116,11 +118,7 @@ def extract_solution_blocks(content: str) -> List[Dict[str, Union[str, List[str]
     if not content:
         return solutions
 
-    # Patrón para bloques de solución MyST
-    # Captura delimitador (grupo 1), exercise_label (grupo 2), solution_label (grupo 3), contenido (grupo 4)
-    solution_pattern = r'(`{3,4})\{solution\}\s+(\S+)\s*\n:label:\s+(\S+)\s*\n(.*?)(?=\1)'
-
-    matches = re.finditer(solution_pattern, content, re.DOTALL)
+    matches = SOLUTION_PATTERN.finditer(content)
 
     for match in matches:
         # group(1) es delimitador
@@ -129,7 +127,7 @@ def extract_solution_blocks(content: str) -> List[Dict[str, Union[str, List[str]
         solution_content = match.group(4).strip()
 
         # Buscar includes dentro de la solución
-        include_matches = re.finditer(r'```\{include\}\s+(.+?)\s*```', solution_content, re.DOTALL)
+        include_matches = INCLUDE_PATTERN.finditer(solution_content)
         include_paths = [m.group(1).strip() for m in include_matches]
 
         solutions.append({
@@ -183,4 +181,3 @@ def resolve_include_path(include_path: str, base_dir: Union[Path, str]) -> Path:
     resolved_path = (Path(base_dir) / clean_path).resolve()
     logger.debug(f"[MarkdownParser] Ruta include resuelta: {include_path} -> {resolved_path}")
     return resolved_path
-
