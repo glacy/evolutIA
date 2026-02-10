@@ -42,6 +42,10 @@ class ExerciseAnalyzer:
         re.MULTILINE
     )
 
+    NUMBERED_STEPS_PATTERN = re.compile(r'^\s*\d+[\.\)]\s+', re.MULTILINE)
+    EQUATION_BLOCKS_PATTERN = re.compile(r'\\begin\{(align|equation|aligned|eqnarray)\}')
+    SEPARATORS_PATTERN = re.compile(r'\n\n+')
+
     CONCEPT_PATTERNS = {
         'integrals': re.compile(r'integral|\\int|\\iint|\\iiint|\\oint', re.IGNORECASE),
         'derivatives': re.compile(r'derivada|\\frac{d}{d|\\[dp]artial|\'', re.IGNORECASE),
@@ -111,19 +115,16 @@ class ExerciseAnalyzer:
             return 0
 
         # Contar numeración explícita
-        numbered_steps = len(re.findall(r'^\s*\d+[\.\)]\s+', solution_content, re.MULTILINE))
+        numbered_steps = len(self.NUMBERED_STEPS_PATTERN.findall(solution_content))
 
         # Contar palabras clave de pasos
         keyword_steps = len(self.STEP_KEYWORDS_PATTERN.findall(solution_content))
 
         # Contar bloques de ecuaciones (align, equation)
-        equation_blocks = len(re.findall(
-            r'\\begin\{(align|equation|aligned|eqnarray)\}',
-            solution_content
-        ))
+        equation_blocks = len(self.EQUATION_BLOCKS_PATTERN.findall(solution_content))
 
         # Estimar pasos basado en separadores
-        separators = len(re.findall(r'\n\n+', solution_content))
+        separators = len(self.SEPARATORS_PATTERN.findall(solution_content))
 
         # Tomar el máximo de los métodos
         estimated_steps = max(
@@ -184,9 +185,6 @@ class ExerciseAnalyzer:
         if solution:
             math_expressions.extend(extract_math_expressions(solution))
 
-        # Extraer variables
-        variables = extract_variables(math_expressions)
-
         # Identificar tipo
         exercise_type = self.identify_exercise_type(content)
 
@@ -194,13 +192,14 @@ class ExerciseAnalyzer:
         solution_steps = self.count_solution_steps(solution) if solution else 0
 
         # Identificar conceptos
-        all_content = content + '\n' + (solution or '')
+        all_content = content + '\\n' + (solution or '')
         concepts = self.identify_concepts(all_content)
 
-        # Calcular complejidad matemática
-        math_complexity = estimate_complexity(math_expressions)
+        # Calcular complejidad matemática y operaciones en un solo pase
+        # Reemplaza estimate_complexity y la iteración redundante para operaciones/variables
+        math_complexity = 0.0
+        all_variables = set()
 
-        # Contar operaciones
         total_operations = {
             'integrals': 0,
             'derivatives': 0,
@@ -209,16 +208,59 @@ class ExerciseAnalyzer:
             'matrices': 0,
             'functions': 0
         }
+
         for expr in math_expressions:
+            # Longitud de la expresión
+            math_complexity += len(expr) * 0.01
+
+            # Operaciones
             ops = count_math_operations(expr)
-            for key in total_operations:
-                total_operations[key] += ops[key]
+
+            # Actualizar totales y complejidad
+            # Integrales
+            count = ops['integrals']
+            total_operations['integrals'] += count
+            math_complexity += count * 2.0
+
+            # Derivadas
+            count = ops['derivatives']
+            total_operations['derivatives'] += count
+            math_complexity += count * 1.5
+
+            # Sumas
+            count = ops['sums']
+            total_operations['sums'] += count
+            math_complexity += count * 1.5
+
+            # Vectores
+            count = ops['vectors']
+            total_operations['vectors'] += count
+            math_complexity += count * 1.0
+
+            # Matrices
+            count = ops['matrices']
+            total_operations['matrices'] += count
+            math_complexity += count * 2.5
+
+            # Funciones
+            count = ops['functions']
+            total_operations['functions'] += count
+            math_complexity += count * 0.5
+
+            # Variables en esta expresión
+            vars_in_expr = extract_variables([expr])
+            all_variables.update(vars_in_expr)
+            math_complexity += len(vars_in_expr) * 0.3
+
+            # Bloques align (ecuaciones múltiples)
+            if '\\begin{align' in expr or '\\begin{aligned' in expr:
+                math_complexity += 2.0
 
         # Calcular complejidad total
         total_complexity = (
             math_complexity +
             solution_steps * 2.0 +
-            len(variables) * 0.5 +
+            len(all_variables) * 0.5 +
             len(concepts) * 1.5 +
             sum(total_operations.values()) * 0.5
         )
@@ -226,8 +268,8 @@ class ExerciseAnalyzer:
         return {
             'type': exercise_type,
             'solution_steps': solution_steps,
-            'variables': list(variables),
-            'num_variables': len(variables),
+            'variables': list(all_variables),
+            'num_variables': len(all_variables),
             'concepts': list(concepts),
             'num_concepts': len(concepts),
             'math_complexity': math_complexity,
