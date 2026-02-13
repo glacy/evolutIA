@@ -200,52 +200,20 @@ class ExerciseAnalyzer:
         math_complexity = 0.0
         all_variables = set()
 
-        total_operations = {
-            'integrals': 0,
-            'derivatives': 0,
-            'sums': 0,
-            'vectors': 0,
-            'matrices': 0,
-            'functions': 0
-        }
+        # Batch processing for operations counting (Optimized)
+        combined_math_content = " ".join(math_expressions)
+        total_operations = count_math_operations(combined_math_content)
+
+        math_complexity += total_operations['integrals'] * 2.0
+        math_complexity += total_operations['derivatives'] * 1.5
+        math_complexity += total_operations['sums'] * 1.5
+        math_complexity += total_operations['vectors'] * 1.0
+        math_complexity += total_operations['matrices'] * 2.5
+        math_complexity += total_operations['functions'] * 0.5
 
         for expr in math_expressions:
             # Longitud de la expresión
             math_complexity += len(expr) * 0.01
-
-            # Operaciones
-            ops = count_math_operations(expr)
-
-            # Actualizar totales y complejidad
-            # Integrales
-            count = ops['integrals']
-            total_operations['integrals'] += count
-            math_complexity += count * 2.0
-
-            # Derivadas
-            count = ops['derivatives']
-            total_operations['derivatives'] += count
-            math_complexity += count * 1.5
-
-            # Sumas
-            count = ops['sums']
-            total_operations['sums'] += count
-            math_complexity += count * 1.5
-
-            # Vectores
-            count = ops['vectors']
-            total_operations['vectors'] += count
-            math_complexity += count * 1.0
-
-            # Matrices
-            count = ops['matrices']
-            total_operations['matrices'] += count
-            math_complexity += count * 2.5
-
-            # Funciones
-            count = ops['functions']
-            total_operations['functions'] += count
-            math_complexity += count * 0.5
 
             # Variables en esta expresión
             vars_in_expr = extract_variables([expr])
