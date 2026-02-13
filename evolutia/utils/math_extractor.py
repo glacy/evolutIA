@@ -134,20 +134,22 @@ def estimate_complexity(expressions: List[str]) -> float:
 
     total_complexity = 0.0
 
+    # Calcular operaciones en lote para mejorar rendimiento
+    combined_expressions = " ".join(expressions)
+    ops = count_math_operations(combined_expressions)
+
+    total_complexity += ops['integrals'] * 2.0
+    total_complexity += ops['derivatives'] * 1.5
+    total_complexity += ops['sums'] * 1.5
+    total_complexity += ops['vectors'] * 1.0
+    total_complexity += ops['matrices'] * 2.5
+    total_complexity += ops['functions'] * 0.5
+
     for expr in expressions:
         # Longitud de la expresión
         total_complexity += len(expr) * 0.01
 
-        # Operaciones complejas
-        ops = count_math_operations(expr)
-        total_complexity += ops['integrals'] * 2.0
-        total_complexity += ops['derivatives'] * 1.5
-        total_complexity += ops['sums'] * 1.5
-        total_complexity += ops['vectors'] * 1.0
-        total_complexity += ops['matrices'] * 2.5
-        total_complexity += ops['functions'] * 0.5
-
-        # Número de variables
+        # Número de variables (por expresión para mantener lógica original)
         vars_count = len(extract_variables([expr]))
         total_complexity += vars_count * 0.3
 
