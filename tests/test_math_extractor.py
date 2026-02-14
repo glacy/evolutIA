@@ -57,3 +57,19 @@ def test_estimate_complexity():
     complex_score = estimate_complexity(complex_expr)
 
     assert complex_score > simple_score
+
+
+def test_count_math_operations_edge_cases():
+    test_cases = [
+        (r"\vec{\nabla}", {'vectors': 1, 'derivatives': 1}),
+        (r"\int\int", {'integrals': 2}),
+        (r"\frac{d}{dx}\int", {'derivatives': 1, 'integrals': 1}),
+        (r"\begin{pmatrix}\int\end{pmatrix}", {'matrices': 1, 'integrals': 1}),
+        (r"\sin\cos\tan", {'functions': 3}),
+        (r"\vec\mathbf", {'vectors': 2}),
+    ]
+
+    for expr, expected_counts in test_cases:
+        ops = count_math_operations(expr)
+        for key, count in expected_counts.items():
+            assert ops[key] == count, f"Failed for {expr}: expected {count} {key}, got {ops[key]}"
