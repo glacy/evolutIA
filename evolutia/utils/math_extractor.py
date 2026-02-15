@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 # Patrones comunes para variables
 # Variables latinas: \vec{A}, A, \mathbf{B}, etc.
-LATIN_REGEX = r'\\vec\{([A-Za-z])\}|\\mathbf\{([A-Za-z])\}|\\hat\{([A-Za-z])\}|([A-Za-z])(?![a-z])'
+# Optimized: use non-capturing group for vector types to reduce branches
+LATIN_REGEX = r'\\(?:vec|mathbf|hat)\{([A-Za-z])\}|([A-Za-z])(?![a-z])'
 
 # Letras griegas: \alpha, \beta, \theta, etc.
 GREEK_REGEX = r'\\(alpha|beta|gamma|delta|epsilon|theta|phi|rho|omega|sigma|lambda|mu|nu|pi|tau)'
