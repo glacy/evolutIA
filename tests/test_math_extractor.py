@@ -1,11 +1,10 @@
-
-import pytest
 from evolutia.utils.math_extractor import (
     extract_math_expressions,
     extract_variables,
     count_math_operations,
-    estimate_complexity
+    estimate_complexity,
 )
+
 
 def test_extract_math_expressions():
     content = r"""
@@ -29,25 +28,26 @@ def test_extract_math_expressions():
     assert r"\int_0^\infty e^{-x} dx" in expressions
     assert r"\sum_{n=0}^\infty \frac{1}{n!}" in expressions
 
+
 def test_extract_variables():
-    expressions = [
-        r"E = mc^2",
-        r"\vec{F} = m\vec{a}",
-        r"\alpha + \beta = \gamma"
-    ]
+    expressions = [r"E = mc^2", r"\vec{F} = m\vec{a}", r"\alpha + \beta = \gamma"]
     variables = extract_variables(expressions)
-    expected_vars = {'E', 'm', 'c', 'F', 'a', 'alpha', 'beta', 'gamma'}
+    expected_vars = {"E", "m", "c", "F", "a", "alpha", "beta", "gamma"}
     assert variables == expected_vars
 
+
 def test_count_math_operations():
-    expr = r"\int \frac{d}{dx} \sum \vec{v} \begin{pmatrix} 1 \\ 0 \end{pmatrix} \sin(x)"
+    expr = (
+        r"\int \frac{d}{dx} \sum \vec{v} \begin{pmatrix} 1 \\ 0 \end{pmatrix} \sin(x)"
+    )
     ops = count_math_operations(expr)
-    assert ops['integrals'] == 1
-    assert ops['derivatives'] == 1
-    assert ops['sums'] == 1
-    assert ops['vectors'] == 1
-    assert ops['matrices'] == 1
-    assert ops['functions'] == 1
+    assert ops["integrals"] == 1
+    assert ops["derivatives"] == 1
+    assert ops["sums"] == 1
+    assert ops["vectors"] == 1
+    assert ops["matrices"] == 1
+    assert ops["functions"] == 1
+
 
 def test_estimate_complexity():
     simple_expr = [r"x + y = z"]
