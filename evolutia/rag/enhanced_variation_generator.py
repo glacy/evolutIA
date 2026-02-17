@@ -4,7 +4,6 @@ Enhanced Variation Generator: Genera variaciones usando RAG.
 import logging
 import os
 from typing import Dict, Optional
-import google.generativeai as genai
 
 try:
     from ..variation_generator import VariationGenerator
@@ -44,6 +43,12 @@ class EnhancedVariationGenerator(VariationGenerator):
 
         # Configurar Gemini si es necesario
         if self.api_provider == 'gemini':
+            try:
+                import google.generativeai as genai
+            except ImportError:
+                logger.error("google.generativeai no instalado. Instala con: pip install google-generativeai")
+                raise
+
             api_key = os.getenv("GOOGLE_API_KEY")
             if not api_key:
                 logger.warning("GOOGLE_API_KEY no encontrada en variables de entorno")
@@ -176,12 +181,12 @@ class EnhancedVariationGenerator(VariationGenerator):
 
         if exercise_type == 'multiple_choice':
             data = extract_and_parse_json(content)
-            
+
             if data and 'question' in data and 'options' in data:
                 variation_content = f"{data['question']}\n\n"
                 for opt, text in data['options'].items():
                     variation_content += f"- **{opt})** {text}\n"
-                
+
                 variation_solution = f"**Respuesta Correcta: {data.get('correct_option', '?')}**\n\n{data.get('explanation', '')}"
             else:
                  logger.warning("No se pudo parsear el JSON del quiz (enhanced), usando contenido raw")
@@ -189,7 +194,7 @@ class EnhancedVariationGenerator(VariationGenerator):
         else:
             variation_content = content
             variation_solution = "Solución pendiente..."
-            
+
             # Intento de mejora de parsing standard si el modelo siguio instrucciones
             parts = content.split("SOLUCIÓN REQUERIDA:")
             if len(parts) == 2:
@@ -236,7 +241,7 @@ class EnhancedVariationGenerator(VariationGenerator):
 
         if not variation:
             return None
-            
+
         provider = self._get_provider()
         if not provider: return None
 
@@ -305,7 +310,7 @@ GENERA LA SOLUCIÓN COMPLETA:"""
         # 4. Get Provider and Generate
         provider = self._get_provider()
         if not provider: return None
-        
+
         content = provider.generate_content(prompt)
 
         if not content:
@@ -317,7 +322,7 @@ GENERA LA SOLUCIÓN COMPLETA:"""
 
         if exercise_type == 'multiple_choice':
             data = extract_and_parse_json(content)
-            
+
             if data and 'question' in data:
                 exercise_text = f"{data['question']}\n\n"
                 for opt, text in data.get('options', {}).items():
