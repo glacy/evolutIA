@@ -104,7 +104,7 @@ class MaterialExtractor:
                 else:
                     solution['resolved_content'] = solution['content']
             
-            return {
+            result = {
                 'file_path': file_path,
                 'frontmatter': frontmatter,
                 'exercises': exercises,
@@ -247,13 +247,11 @@ class MaterialExtractor:
         all_exercises = []
         
         for material in materials:
+            # Create a map for faster lookup of solutions by exercise label
+            solutions_map = {sol['exercise_label']: sol for sol in material['solutions']}
+
             for exercise in material['exercises']:
-                # Buscar solución correspondiente
-                solution = None
-                for sol in material['solutions']:
-                    if sol['exercise_label'] == exercise['label']:
-                        solution = sol
-                        break
+                solution = solutions_map.get(exercise['label'])
                 
                 exercise_data = {
                     'label': exercise['label'],
