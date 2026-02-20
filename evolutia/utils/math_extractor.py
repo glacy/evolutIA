@@ -57,15 +57,11 @@ def extract_math_expressions(content: str) -> List[str]:
     expressions = []
 
     for match in COMBINED_MATH_PATTERN.finditer(content):
-        expr = (
-            match.group('block_content') or
-            match.group('display_dollar') or
-            match.group('display_bracket') or
-            match.group('inline_dollar') or
-            match.group('inline_paren')
-        )
-        if expr:
-            expressions.append(expr.strip())
+        # match.lastindex gives the index of the capturing group that matched
+        if match.lastindex:
+            expr = match.group(match.lastindex)
+            if expr:
+                expressions.append(expr.strip())
 
     logger.debug(f"[MathExtractor] Extraídas {len(expressions)} expresiones matemáticas del contenido")
     return expressions
@@ -86,13 +82,15 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
     variables = set()
 
     for expr in math_expressions:
-        for match in COMBINED_VARIABLES_PATTERN.finditer(expr):
-            # Check which group matched
-            # lastindex gives the index of the capturing group that matched
-            if match.lastindex:
-                var = match.group(match.lastindex)
+        # Use findall which is faster than finditer loop for small/dense matches
+        matches = COMBINED_VARIABLES_PATTERN.findall(expr)
+        for group_tuple in matches:
+            # group_tuple contains captured groups, one of them is non-empty.
+            # Iterate to find the non-empty one.
+            for var in group_tuple:
                 if var:
                     variables.add(var)
+                    break
 
     logger.debug(f"[MathExtractor] Extraídas {len(variables)} variables de {len(math_expressions)} expresiones")
     return variables
@@ -108,6 +106,8 @@ def count_math_operations(expression: str) -> Dict[str, int]:
     Returns:
         Diccionario con conteo de operaciones
     """
+    # Optimized: scanning with individual regexes using findall is faster than
+    # a combined regex with finditer loop in Python for this specific case.
     operations = {
         'integrals': len(INTEGRALS_PATTERN.findall(expression)),
         'derivatives': len(DERIVATIVES_PATTERN.findall(expression)),
