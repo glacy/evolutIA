@@ -86,13 +86,17 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
     variables = set()
 
     for expr in math_expressions:
-        for match in COMBINED_VARIABLES_PATTERN.finditer(expr):
-            # Check which group matched
-            # lastindex gives the index of the capturing group that matched
-            if match.lastindex:
-                var = match.group(match.lastindex)
+        # Use findall which is faster than finditer for simple extractions.
+        # Note: This assumes COMBINED_VARIABLES_PATTERN has multiple capturing groups,
+        # so findall returns a list of tuples.
+        matches = COMBINED_VARIABLES_PATTERN.findall(expr)
+        for groups in matches:
+            # findall returns tuples of groups. Find the non-empty one.
+            # This loop is faster than creating Match objects in finditer
+            for var in groups:
                 if var:
                     variables.add(var)
+                    break
 
     logger.debug(f"[MathExtractor] Extraídas {len(variables)} variables de {len(math_expressions)} expresiones")
     return variables
