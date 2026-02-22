@@ -57,15 +57,12 @@ def extract_math_expressions(content: str) -> List[str]:
     expressions = []
 
     for match in COMBINED_MATH_PATTERN.finditer(content):
-        expr = (
-            match.group('block_content') or
-            match.group('display_dollar') or
-            match.group('display_bracket') or
-            match.group('inline_dollar') or
-            match.group('inline_paren')
-        )
-        if expr:
-            expressions.append(expr.strip())
+        # Optimized: get the matched group directly using lastindex
+        # This avoids checking all named groups
+        if match.lastindex:
+            expr = match.group(match.lastindex)
+            if expr:
+                expressions.append(expr.strip())
 
     logger.debug(f"[MathExtractor] Extraídas {len(expressions)} expresiones matemáticas del contenido")
     return expressions
@@ -86,13 +83,14 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
     variables = set()
 
     for expr in math_expressions:
-        for match in COMBINED_VARIABLES_PATTERN.finditer(expr):
-            # Check which group matched
-            # lastindex gives the index of the capturing group that matched
-            if match.lastindex:
-                var = match.group(match.lastindex)
-                if var:
-                    variables.add(var)
+        # Optimized: findall is faster than finditer loop for simple extraction
+        # findall returns a list of tuples (one for each group in regex)
+        for groups in COMBINED_VARIABLES_PATTERN.findall(expr):
+            # Find the first non-empty group in the tuple
+            for g in groups:
+                if g:
+                    variables.add(g)
+                    break
 
     logger.debug(f"[MathExtractor] Extraídas {len(variables)} variables de {len(math_expressions)} expresiones")
     return variables
