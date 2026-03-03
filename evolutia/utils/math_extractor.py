@@ -56,16 +56,13 @@ def extract_math_expressions(content: str) -> List[str]:
 
     expressions = []
 
-    for match in COMBINED_MATH_PATTERN.finditer(content):
-        expr = (
-            match.group('block_content') or
-            match.group('display_dollar') or
-            match.group('display_bracket') or
-            match.group('inline_dollar') or
-            match.group('inline_paren')
-        )
-        if expr:
-            expressions.append(expr.strip())
+    # Optimizacion de rendimiento (Bolt): findall devuelve tuplas con los grupos,
+    # evitando la creacion y manejo de objetos re.Match. Es mas rapido.
+    for match_groups in COMBINED_MATH_PATTERN.findall(content):
+        for expr in match_groups:
+            if expr:
+                expressions.append(expr.strip())
+                break
 
     logger.debug(f"[MathExtractor] Extraídas {len(expressions)} expresiones matemáticas del contenido")
     return expressions
@@ -85,14 +82,15 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
     """
     variables = set()
 
+    # Optimizacion de rendimiento (Bolt): Usamos findall en lugar de finditer
+    # para evitar el overhead de crear objetos re.Match. findall devuelve tuplas
+    # de grupos que se pueden iterar mas rapido en Python.
     for expr in math_expressions:
-        for match in COMBINED_VARIABLES_PATTERN.finditer(expr):
-            # Check which group matched
-            # lastindex gives the index of the capturing group that matched
-            if match.lastindex:
-                var = match.group(match.lastindex)
+        for match_groups in COMBINED_VARIABLES_PATTERN.findall(expr):
+            for var in match_groups:
                 if var:
                     variables.add(var)
+                    break
 
     logger.debug(f"[MathExtractor] Extraídas {len(variables)} variables de {len(math_expressions)} expresiones")
     return variables
