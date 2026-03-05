@@ -253,14 +253,30 @@ class EvolutiaEngine:
         
         if args.mode == 'creation':
             # Creation Mode Logic
-            for i in range(args.num_ejercicios):
-                current_topic = args.tema[i % len(args.tema)]
-                current_tags = [args.tags[i % len(args.tags)]] if args.tags else [current_topic]
-                
-                tasks.append({
-                    'func': self._generate_creation_mode,
-                    'args': (generator, current_topic, current_tags, args.complejidad, args.type, args)
-                })
+            # Optimization: Hoist attribute lookups and len() calculations out of the loop
+            tema = args.tema
+            tags = args.tags
+            len_tema = len(tema)
+            complejidad = args.complejidad
+            ejercicio_type = args.type
+
+            if tags:
+                len_tags = len(tags)
+                for i in range(args.num_ejercicios):
+                    current_topic = tema[i % len_tema]
+                    current_tags = [tags[i % len_tags]]
+                    tasks.append({
+                        'func': self._generate_creation_mode,
+                        'args': (generator, current_topic, current_tags, complejidad, ejercicio_type, args)
+                    })
+            else:
+                for i in range(args.num_ejercicios):
+                    current_topic = tema[i % len_tema]
+                    current_tags = [current_topic]
+                    tasks.append({
+                        'func': self._generate_creation_mode,
+                        'args': (generator, current_topic, current_tags, complejidad, ejercicio_type, args)
+                    })
         else:
             # Variation Mode Logic
             
@@ -464,18 +480,41 @@ class EvolutiaEngine:
         tasks = []
 
         if args.mode == 'creation':
-            for i in range(args.num_ejercicios):
-                current_topic = args.tema[i % len(args.tema)]
-                current_tags = [args.tags[i % len(args.tags)]] if args.tags else [current_topic]
-                tasks.append((
-                    'creation',
-                    generator,
-                    current_topic,
-                    current_tags,
-                    args.complejidad,
-                    args.type,
-                    args.max_tokens
-                ))
+            # Optimization: Hoist attribute lookups and len() calculations out of the loop
+            tema = args.tema
+            tags = args.tags
+            len_tema = len(tema)
+            complejidad = args.complejidad
+            ejercicio_type = args.type
+            max_tokens = args.max_tokens
+
+            if tags:
+                len_tags = len(tags)
+                for i in range(args.num_ejercicios):
+                    current_topic = tema[i % len_tema]
+                    current_tags = [tags[i % len_tags]]
+                    tasks.append((
+                        'creation',
+                        generator,
+                        current_topic,
+                        current_tags,
+                        complejidad,
+                        ejercicio_type,
+                        max_tokens
+                    ))
+            else:
+                for i in range(args.num_ejercicios):
+                    current_topic = tema[i % len_tema]
+                    current_tags = [current_topic]
+                    tasks.append((
+                        'creation',
+                        generator,
+                        current_topic,
+                        current_tags,
+                        complejidad,
+                        ejercicio_type,
+                        max_tokens
+                    ))
         else:
             if args.label:
                 target_exercises = list(selected_exercises)
