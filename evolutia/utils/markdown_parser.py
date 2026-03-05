@@ -5,7 +5,7 @@ import re
 import yaml
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +68,13 @@ def extract_exercise_blocks(content: str) -> List[Dict[str, Union[str, None]]]:
         return exercises
 
     # Usa backreference \1 para coincidir con la longitud exacta del delimitador de cierre
-    matches = EXERCISE_PATTERN.finditer(content)
+    # Optimization: Use findall instead of finditer to avoid re.Match object overhead
+    matches = EXERCISE_PATTERN.findall(content)
 
     for match in matches:
-        # group(1) es el delimitador
-        label = match.group(2)
-        exercise_content = match.group(3).strip()
+        # match es una tupla: (delimitador, label, content)
+        label = match[1]
+        exercise_content = match[2].strip()
 
         # Buscar si hay un include dentro
         include_match = INCLUDE_PATTERN.search(exercise_content)
@@ -118,17 +119,19 @@ def extract_solution_blocks(content: str) -> List[Dict[str, Union[str, List[str]
     if not content:
         return solutions
 
-    matches = SOLUTION_PATTERN.finditer(content)
+    # Optimization: Use findall instead of finditer to avoid re.Match object overhead
+    matches = SOLUTION_PATTERN.findall(content)
 
     for match in matches:
-        # group(1) es delimitador
-        exercise_label = match.group(2)
-        solution_label = match.group(3)
-        solution_content = match.group(4).strip()
+        # match es una tupla: (delimitador, exercise_label, solution_label, content)
+        exercise_label = match[1]
+        solution_label = match[2]
+        solution_content = match[3].strip()
 
         # Buscar includes dentro de la solución
-        include_matches = INCLUDE_PATTERN.finditer(solution_content)
-        include_paths = [m.group(1).strip() for m in include_matches]
+        # INCLUDE_PATTERN solo tiene un grupo, findall devuelve una lista de strings
+        include_matches = INCLUDE_PATTERN.findall(solution_content)
+        include_paths = [m.strip() for m in include_matches]
 
         solutions.append({
             'exercise_label': exercise_label,
