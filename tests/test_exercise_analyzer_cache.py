@@ -2,7 +2,6 @@
 Test de integración de caché en ExerciseAnalyzer.
 """
 import pytest
-from pathlib import Path
 from evolutia.exercise_analyzer import ExerciseAnalyzer
 from evolutia.cache.exercise_cache import ExerciseAnalysisCache
 
@@ -28,7 +27,7 @@ class TestExerciseAnalyzerIntegration:
         assert analysis['type'] == 'calculo'
         assert analysis['total_complexity'] == 25.5
         assert analysis['num_math_expressions'] == 3
-        assert len(cache) == 0
+        assert len(analyzer.cache) == 0
 
     def test_analyzer_with_cache_hit(self, temp_cache_dir):
         """Test que el caché funciona con hit."""
@@ -77,7 +76,7 @@ class TestExerciseAnalyzerIntegration:
         assert cache.misses == 1
 
         # Segunda llamada (hit)
-        analysis2 = analyzer.analyze(exercise)
+        analyzer.analyze(exercise)
         assert analysis['total_complexity'] == 15.0
         assert cache.get_stats()['hits'] == 2
         assert cache.misses == 1  # No incrementado
@@ -111,7 +110,7 @@ class TestExerciseAnalyzerIntegration:
 
         # Limpiar caché
         cache.clear()
-        assert len(cache) == 0
+        assert len(analyzer.cache) == 0
 
         # Verificar que se limpió correctamente
         exercise = {
