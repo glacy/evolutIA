@@ -104,7 +104,7 @@ class MaterialExtractor:
                 else:
                     solution['resolved_content'] = solution['content']
             
-            return {
+            result = {
                 'file_path': file_path,
                 'frontmatter': frontmatter,
                 'exercises': exercises,
