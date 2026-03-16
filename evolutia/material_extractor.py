@@ -247,13 +247,12 @@ class MaterialExtractor:
         all_exercises = []
         
         for material in materials:
+            # Diccionario de búsqueda O(N) para soluciones
+            solutions_dict = {sol['exercise_label']: sol for sol in material['solutions']}
+
             for exercise in material['exercises']:
-                # Buscar solución correspondiente
-                solution = None
-                for sol in material['solutions']:
-                    if sol['exercise_label'] == exercise['label']:
-                        solution = sol
-                        break
+                # Buscar solución correspondiente O(1)
+                solution = solutions_dict.get(exercise['label'])
                 
                 exercise_data = {
                     'label': exercise['label'],
@@ -311,5 +310,3 @@ class MaterialExtractor:
             'last_scan_timestamp': self._last_scan_timestamp,
             'cache_ttl': self._cache_ttl
         }
-
-

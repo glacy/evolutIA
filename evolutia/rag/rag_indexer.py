@@ -380,13 +380,13 @@ class RAGIndexer:
         for material in materials:
             # Indexar ejercicios
             exercises = material.get('exercises', [])
+
+            # Diccionario de búsqueda O(N) para soluciones
+            solutions_dict = {sol['exercise_label']: sol for sol in material.get('solutions', [])}
+
             for exercise_data in exercises:
-                # Buscar solución correspondiente
-                solution = None
-                for sol in material.get('solutions', []):
-                    if sol['exercise_label'] == exercise_data['label']:
-                        solution = sol
-                        break
+                # Buscar solución correspondiente O(1)
+                solution = solutions_dict.get(exercise_data['label'])
                 
                 exercise = {
                     'label': exercise_data['label'],
