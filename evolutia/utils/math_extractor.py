@@ -84,15 +84,19 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
         Conjunto de variables identificadas
     """
     variables = set()
+    if not math_expressions:
+        return variables
 
-    for expr in math_expressions:
-        for match in COMBINED_VARIABLES_PATTERN.finditer(expr):
-            # Check which group matched
-            # lastindex gives the index of the capturing group that matched
-            if match.lastindex:
-                var = match.group(match.lastindex)
-                if var:
-                    variables.add(var)
+    # Combinar expresiones para búsqueda optimizada (O(1) compilación)
+    combined_expr = " ".join(math_expressions)
+
+    for match in COMBINED_VARIABLES_PATTERN.finditer(combined_expr):
+        # Check which group matched
+        # lastindex gives the index of the capturing group that matched
+        if match.lastindex:
+            var = match.group(match.lastindex)
+            if var:
+                variables.add(var)
 
     logger.debug(f"[MathExtractor] Extraídas {len(variables)} variables de {len(math_expressions)} expresiones")
     return variables
