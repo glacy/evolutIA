@@ -2,7 +2,7 @@
 Context Enricher: Enriquece prompts con contexto recuperado del RAG.
 """
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ContextEnricher:
         
         for i, exercise in enumerate(sorted_exercises, 1):
             content = exercise.get('content', '')
-            metadata = exercise.get('metadata', {})
+            exercise.get('metadata', {})
             similarity = exercise.get('similarity', 0)
             
             # Extraer solo el enunciado si es muy largo
