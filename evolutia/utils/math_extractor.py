@@ -85,8 +85,11 @@ def extract_variables(math_expressions: List[str]) -> Set[str]:
     """
     variables = set()
 
-    for expr in math_expressions:
-        for match in COMBINED_VARIABLES_PATTERN.finditer(expr):
+    # ⚡ Bolt: Batch process expressions to reduce Python loop and regex execution overhead
+    # Joining into a single string is faster than iterating and finding over many small strings.
+    if math_expressions:
+        combined_expr = " ".join(math_expressions)
+        for match in COMBINED_VARIABLES_PATTERN.finditer(combined_expr):
             # Check which group matched
             # lastindex gives the index of the capturing group that matched
             if match.lastindex:
