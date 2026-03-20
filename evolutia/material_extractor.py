@@ -3,7 +3,7 @@ Extractor de materiales didácticos.
 Lee y parsea archivos Markdown de lecturas, prácticas y tareas.
 """
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 import logging
 import time
 

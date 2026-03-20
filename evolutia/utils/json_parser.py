@@ -5,9 +5,13 @@ que pueden contener LaTeX o formatos markdown incorrectos.
 import json
 import re
 import logging
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+# Pre-compiled regex patterns for performance optimization
+CODE_BLOCK_PATTERN = re.compile(r'```(?:json)?\s*(.*?)```', re.DOTALL)
+REGEX_LATEX_FIX_PATTERN = re.compile(r'(?<!\\)\\(?!["\\/nru])')
 
 def extract_and_parse_json(text: str) -> Optional[Dict[str, Any]]:
     """
@@ -27,8 +31,7 @@ def extract_and_parse_json(text: str) -> Optional[Dict[str, Any]]:
     # 1. Limpieza básica y extracción de bloque de código
     clean_text = text.strip()
 
-    code_block_pattern = re.compile(r'```(?:json)?\s*(.*?)```', re.DOTALL)
-    match = code_block_pattern.search(clean_text)
+    match = CODE_BLOCK_PATTERN.search(clean_text)
 
     if match:
         clean_text = match.group(1).strip()
@@ -57,11 +60,9 @@ def extract_and_parse_json(text: str) -> Optional[Dict[str, Any]]:
     # Lookahead negativo para permitir solo los de whitelist (?!["\\/nru])
     # Así, \t se convierte en \\t (literal \t string), \n se queda como \n (control char).
 
-    regex_latex_fix = r'(?<!\\)\\(?!["\\/nru])'
-
     try:
         # Aplicar fix agresivo
-        fixed_text = re.sub(regex_latex_fix, r'\\\\', clean_text)
+        fixed_text = REGEX_LATEX_FIX_PATTERN.sub(r'\\\\', clean_text)
         result = json.loads(fixed_text, strict=False)
         logger.info(f"[JsonParser] JSON parseado exitosamente con fix LaTeX (longitud={len(str(result))})")
         return result
