@@ -2,11 +2,15 @@
 Generador de archivos de examen en formato MyST/Markdown.
 Crea la estructura completa de archivos para un examen.
 """
+import re
 import yaml
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from datetime import datetime
 import logging
+
+# Compilar expresiones regulares a nivel de módulo para mejorar el rendimiento
+FRONTMATTER_PATTERN = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +31,7 @@ class ExamGenerator:
                                   tags: Optional[List[str]] = None) -> str:
         """
         Genera el frontmatter YAML para un examen.
-        
+
         Args:
             exam_number: Número del examen
             subject: Asignatura
@@ -35,7 +39,7 @@ class ExamGenerator:
         """
         if tags is None:
             tags = []
-        
+
         frontmatter = {
             'title': f'Examen  {exam_number}',
             'description': f'Examen  {exam_number}',
@@ -46,15 +50,15 @@ class ExamGenerator:
             'date': datetime.now().strftime('%Y-%m-%d'),
             'downloads': []
         }
-        
+
         # Convertir a YAML
         yaml_str = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
         return f"---\n{yaml_str}---\n\n"
-    
+
     def generate_instructions_block(self) -> str:
         """
         Genera el bloque de instrucciones del examen.
-        
+
         Returns:
             String con el bloque de instrucciones en formato MyST
         """
@@ -78,17 +82,17 @@ class ExamGenerator:
 :::
 """
         return instructions
-    
-    def generate_exercise_section(self, exercise_num: int, exam_num: int, 
+
+    def generate_exercise_section(self, exercise_num: int, exam_num: int,
                                   points: int = 25) -> str:
         """
         Genera la sección de un ejercicio en el examen principal.
-        
+
         Args:
             exercise_num: Número del ejercicio
             exam_num: Número del examen
             points: Puntos del ejercicio
-        
+
         Returns:
             String con la sección del ejercicio
         """
@@ -96,7 +100,7 @@ class ExamGenerator:
         solution_label = f"solucion-ex{exercise_num}_e{exam_num}"
         exercise_file = f"./ex{exercise_num}_e{exam_num}.md"
         solution_file = f"./solucion_ex{exercise_num}_e{exam_num}.md"
-        
+
         section = f"""## Ejercicio {exercise_num} [{points} puntos]
 ````{{exercise}} {exercise_num}
 :label: {exercise_label}
@@ -119,18 +123,18 @@ class ExamGenerator:
 
 """
         return section
-    
-    def generate_exercise_file(self, exercise_content: str, exercise_num: int, 
+
+    def generate_exercise_file(self, exercise_content: str, exercise_num: int,
                                exam_num: int, metadata: Dict = None) -> str:
         """
         Genera el contenido de un archivo de ejercicio individual.
-        
+
         Args:
             exercise_content: Contenido del ejercicio
             exercise_num: Número del ejercicio
             exam_num: Número del examen
             metadata: Metadatos opcionales (generator, model, date)
-        
+
         Returns:
             Contenido del archivo
         """
@@ -144,21 +148,21 @@ class ExamGenerator:
             frontmatter.update(metadata)
             yaml_str = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
             content += f"---\n{yaml_str}---\n\n"
-            
+
         content += exercise_content.strip() + "\n"
         return content
-    
+
     def generate_solution_file(self, solution_content: str, exercise_num: int,
                                exam_num: int, metadata: Dict = None) -> str:
         """
         Genera el contenido de un archivo de solución individual.
-        
+
         Args:
             solution_content: Contenido de la solución
             exercise_num: Número del ejercicio
             exam_num: Número del examen
             metadata: Metadatos opcionales
-        
+
         Returns:
             Contenido del archivo
         """
@@ -172,16 +176,16 @@ class ExamGenerator:
             frontmatter.update(metadata)
             yaml_str = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
             content += f"---\n{yaml_str}---\n\n"
-            
+
         content += solution_content.strip() + "\n"
         return content
-    
+
     def generate_exam(self, variations: List[Dict], exam_number: int,
                       output_dir: Path, subject: str = "IF3602 - II semestre 2025",
                       keywords: List[str] = None, metadata: Dict = None) -> bool:
         """
         Genera un examen completo con todas sus variaciones.
-        
+
         Args:
             variations: Lista de variaciones generadas (cada una debe tener
                        'variation_content' y opcionalmente 'variation_solution')
@@ -190,7 +194,7 @@ class ExamGenerator:
             subject: Asignatura
             keywords: Palabras clave
             metadata: Metadatos generales para incluir en ejercicios (ej: model)
-        
+
         Returns:
             True si se generó exitosamente, False en caso contrario
         """
@@ -198,42 +202,42 @@ class ExamGenerator:
             # Crear directorio si no existe
             output_dir = Path(output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Recolectar todos los tags de las variaciones
             all_tags = set()
             if keywords:
                 all_tags.update(keywords)
-            
+
             for variation in variations:
                 original_frontmatter = variation.get('original_frontmatter', {})
                 if 'tags' in original_frontmatter and original_frontmatter['tags']:
                     all_tags.update(original_frontmatter['tags'])
-            
+
             # Generar archivo principal del examen
             exam_content = self.generate_exam_frontmatter(exam_number, subject, list(all_tags))
             exam_content += self.generate_instructions_block()
             exam_content += "\n"
-            
+
             # Agregar secciones de ejercicios
             points_per_exercise = 100 // len(variations)
             for i, variation in enumerate(variations, 1):
                 exam_content += self.generate_exercise_section(
                     i, exam_number, points_per_exercise
                 )
-            
+
             # Escribir archivo principal
             exam_file = output_dir / f"examen{exam_number}.md"
             with open(exam_file, 'w', encoding='utf-8') as f:
                 f.write(exam_content)
-            
+
             logger.info(f"Archivo principal creado: {exam_file}")
-            
+
             # Generar archivos individuales de ejercicios y soluciones
             for i, variation in enumerate(variations, 1):
                 # Preparar metadatos específicos de esta variación
                 current_metadata = metadata.copy() if metadata else {}
                 original_frontmatter = variation.get('original_frontmatter', {})
-                
+
                 # Agregar tags y subject originales si existen
                 if 'tags' in original_frontmatter:
                     current_metadata['tags'] = original_frontmatter['tags']
@@ -241,11 +245,11 @@ class ExamGenerator:
                     current_metadata['original_subject'] = original_frontmatter['subject']
                 if 'complexity' in original_frontmatter:
                     current_metadata['complexity'] = original_frontmatter['complexity']
-                
+
                 # Add original label for traceability
                 if 'original_label' in variation and variation['original_label']:
                      current_metadata['based_on'] = variation['original_label']
-                
+
                 # Add RAG references if available
                 if 'rag_references' in variation and variation['rag_references']:
                     current_metadata['rag_references'] = variation['rag_references']
@@ -259,7 +263,7 @@ class ExamGenerator:
                             exercise_content, i, exam_number, current_metadata
                         ))
                     logger.info(f"Ejercicio creado: {exercise_file}")
-                
+
                 # Archivo de solución
                 solution_content = variation.get('variation_solution', '')
                 if solution_content:
@@ -280,12 +284,12 @@ class ExamGenerator:
         except Exception as e:
             logger.error(f"[ExamGenerator] Error generando examen (output_dir={output_dir}, exam_number={exam_number}): {e}")
             return False
-    
+
     def _update_downloads_in_frontmatter(self, exam_file: Path, exam_number: int,
                                         num_exercises: int):
         """
         Actualiza la sección de downloads en el frontmatter del examen.
-        
+
         Args:
             exam_file: Archivo del examen
             exam_number: Número del examen
@@ -293,37 +297,35 @@ class ExamGenerator:
         """
         try:
             content = exam_file.read_text(encoding='utf-8')
-            
+
             # Extraer frontmatter
-            import re
-            frontmatter_match = re.match(r'^---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
+            frontmatter_match = FRONTMATTER_PATTERN.match(content)
             if not frontmatter_match:
                 return
-            
+
             frontmatter_str = frontmatter_match.group(1)
             frontmatter = yaml.safe_load(frontmatter_str) or {}
-            
+
             # Crear lista de downloads
             downloads = [
                 {'file': f'./examen{exam_number}.md', 'title': f'examen{exam_number}.md'},
                 {'file': f'./examen{exam_number}.pdf', 'title': f'examen{exam_number}.pdf'}
             ]
-            
+
             for i in range(1, num_exercises + 1):
                 downloads.append({
                     'file': f'./solucion_ex{i}_e{exam_number}.md',
                     'title': f'solucion_ex{i}_e{exam_number}.md'
                 })
-            
+
             frontmatter['downloads'] = downloads
-            
+
             # Reemplazar frontmatter
             new_frontmatter_str = yaml.dump(
                 frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False
             )
             new_content = f"---\n{new_frontmatter_str}---\n\n" + content[frontmatter_match.end():]
-            
+
             exam_file.write_text(new_content, encoding='utf-8')
         except Exception as e:
             logger.warning(f"[ExamGenerator] No se pudo actualizar downloads en {exam_file}: {e}")
-
